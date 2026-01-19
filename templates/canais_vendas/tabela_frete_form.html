@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar{% else %}Nova{% endif %} Tabela de Frete{% endblock %}
+{% block page_title %}{% if object %}Editar{% else %}Nova{% endif %} Tabela de Frete{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{% if object %}Editar: {{ object.nome }}{% else %}Nova Tabela de Frete{% endif %}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="id_nome" class="form-label">Nome *</label>
+                        <input type="text" name="nome" class="form-control" id="id_nome"
+                               value="{{ form.nome.value|default:'' }}" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_tipo" class="form-label">Tipo *</label>
+                        {{ form.tipo }}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" name="ativo" class="form-check-input" id="id_ativo"
+                                   {% if form.ativo.value %}checked{% endif %}>
+                            <label class="form-check-label" for="id_ativo">Ativo</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_descricao" class="form-label">Descrição</label>
+                <textarea name="descricao" class="form-control" id="id_descricao" rows="2">{{ form.descricao.value|default:'' }}</textarea>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Salvar
+                </button>
+                <a href="{% url 'tabela_frete_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

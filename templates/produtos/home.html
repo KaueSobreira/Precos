@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Sistema de Precificação{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Produtos</h6>
+                        <h3 class="mb-0">{{ total_produtos }}</h3>
+                    </div>
+                    <div class="text-primary">
+                        <i class="bi bi-box-seam fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Grupos</h6>
+                        <h3 class="mb-0">{{ total_grupos }}</h3>
+                    </div>
+                    <div class="text-success">
+                        <i class="bi bi-diagram-3 fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Canais</h6>
+                        <h3 class="mb-0">{{ total_canais }}</h3>
+                    </div>
+                    <div class="text-warning">
+                        <i class="bi bi-shop fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card danger">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h6 class="text-muted mb-1">Preços Ativos</h6>
+                        <h3 class="mb-0">{{ total_precos }}</h3>
+                    </div>
+                    <div class="text-danger">
+                        <i class="bi bi-tag fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Últimos Produtos Cadastrados</h5>
+                <a href="{% url 'produto_list' %}" class="btn btn-sm btn-outline-primary">Ver todos</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Título</th>
+                            <th>Custo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for produto in ultimos_produtos %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'produto_detail' produto.pk %}">{{ produto.sku }}</a>
+                            </td>
+                            <td>{{ produto.titulo|truncatechars:40 }}</td>
+                            <td>R$ {{ produto.custo|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-4">
+                                Nenhum produto cadastrado ainda.
+                                <br>
+                                <a href="{% url 'produto_create' %}" class="btn btn-primary btn-sm mt-2">
+                                    <i class="bi bi-plus"></i> Cadastrar Produto
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Últimas Alterações de Preço</h5>
+                <a href="{% url 'historico_list' %}" class="btn btn-sm btn-outline-primary">Ver histórico</a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Produto</th>
+                            <th>Canal</th>
+                            <th>Preço</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for h in ultimos_historicos %}
+                        <tr>
+                            <td>{{ h.data_registro|date:"d/m/Y H:i" }}</td>
+                            <td>{{ h.sku_produto }}</td>
+                            <td>{{ h.nome_canal }}</td>
+                            <td>R$ {{ h.preco_venda|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-4">
+                                Nenhuma alteração registrada ainda.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h5><i class="bi bi-info-circle"></i> Ações Rápidas</h5>
+                <div class="mt-3">
+                    <a href="{% url 'produto_create' %}" class="btn btn-primary me-2">
+                        <i class="bi bi-plus-circle"></i> Novo Produto
+                    </a>
+                    <a href="{% url 'canal_create' %}" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-plus-circle"></i> Novo Canal
+                    </a>
+                    <a href="{% url 'grupo_create' %}" class="btn btn-outline-primary me-2">
+                        <i class="bi bi-plus-circle"></i> Novo Grupo
+                    </a>
+                    <a href="{% url 'tabela_frete_create' %}" class="btn btn-outline-primary">
+                        <i class="bi bi-plus-circle"></i> Nova Tabela de Frete
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

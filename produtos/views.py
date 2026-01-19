@@ -1,0 +1,286 @@
+from django.shortcuts import render, redirect, get_object_or_404
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib import messages
+from django.urls import reverse_lazy, reverse
+from django.db.models import Count
+from django.forms import modelformset_factory
+from django.db import transaction
+
+from .models import Produto, ItemFichaTecnica, PrecoProdutoCanal, HistoricoPreco
+from canais_vendas.models import CanalVenda
+from grupo_vendas.models import GrupoCanais
+
+
+def home(request):
+    """Dashboard principal"""
+    context = {
+        'total_produtos': Produto.objects.filter(ativo=True).count(),
+        'total_grupos': GrupoCanais.objects.count(),
+        'total_canais': CanalVenda.objects.filter(ativo=True).count(),
+        'total_precos': PrecoProdutoCanal.objects.filter(ativo=True).count(),
+        'ultimos_produtos': Produto.objects.filter(ativo=True).order_by('-criado_em')[:5],
+        'ultimos_historicos': HistoricoPreco.objects.order_by('-data_registro')[:10],
+    }
+    return render(request, 'produtos/home.html', context)
+
+
+class ProdutoListView(ListView):
+    model = Produto
+    template_name = 'produtos/produto_list.html'
+    context_object_name = 'produtos'
+    paginate_by = 20
+
+    def get_queryset(self):
+        queryset = Produto.objects.all()
+        search = self.request.GET.get('search')
+        if search:
+            queryset = queryset.filter(sku__icontains=search) | queryset.filter(titulo__icontains=search)
+        return queryset.order_by('-criado_em')
+
+
+class ProdutoDetailView(DetailView):
+    model = Produto
+    template_name = 'produtos/produto_detail.html'
+    context_object_name = 'produto'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['itens_ficha'] = self.object.itens_ficha.all()
+        context['precos_canais'] = self.object.precos_canais.filter(ativo=True).select_related('canal', 'canal__grupo')
+        return context
+
+
+class ProdutoCreateView(CreateView):
+    model = Produto
+    template_name = 'produtos/produto_form.html'
+    fields = ['titulo', 'sku', 'ean', 'largura', 'altura', 'profundidade', 'peso_fisico', 'ativo']
+
+    def get_success_url(self):
+        # Redireciona para a ficha técnica após criar o produto
+        return reverse('ficha_tecnica_edit', kwargs={'produto_pk': self.object.pk})
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Produto criado! Agora cadastre a ficha técnica para definir o custo.')
+        return super().form_valid(form)
+
+
+class ProdutoUpdateView(UpdateView):
+    model = Produto
+    template_name = 'produtos/produto_form.html'
+    fields = ['titulo', 'sku', 'ean', 'largura', 'altura', 'profundidade', 'peso_fisico', 'ativo']
+
+    def get_success_url(self):
+        return reverse('produto_detail', kwargs={'pk': self.object.pk})
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Produto atualizado com sucesso!')
+        return super().form_valid(form)
+
+
+class ProdutoDeleteView(DeleteView):
+    model = Produto
+    template_name = 'produtos/produto_confirm_delete.html'
+    success_url = reverse_lazy('produto_list')
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Produto excluído com sucesso!')
+        return super().form_valid(form)
+
+
+def ficha_tecnica_edit(request, produto_pk):
+    """Edição da ficha técnica de um produto"""
+    produto = get_object_or_404(Produto, pk=produto_pk)
+
+    FormSetBase = modelformset_factory(
+        ItemFichaTecnica,
+        fields=['codigo', 'descricao', 'unidade', 'quantidade', 'custo_unitario', 'multiplicador'],
+        extra=0,
+        can_delete=True
+    )
+
+    if request.method == 'POST':
+        formset_mp = FormSetBase(request.POST, queryset=produto.itens_ficha.filter(tipo='MP'), prefix='mp')
+        formset_terc = FormSetBase(request.POST, queryset=produto.itens_ficha.filter(tipo='TR'), prefix='terc')
+        formset_emb = FormSetBase(request.POST, queryset=produto.itens_ficha.filter(tipo='EM'), prefix='emb')
+
+        if formset_mp.is_valid() and formset_terc.is_valid() and formset_emb.is_valid():
+            
+            def salvar_formset(formset, tipo_item):
+                instances = formset.save(commit=False)
+                for instance in instances:
+                    instance.produto = produto
+                    instance.tipo = tipo_item
+                    instance.save()
+                for obj in formset.deleted_objects:
+                    obj.delete()
+
+            # Salvar em transação para garantir integridade
+            with transaction.atomic():
+                salvar_formset(formset_mp, 'MP')
+                salvar_formset(formset_terc, 'TR')
+                salvar_formset(formset_emb, 'EM')
+
+            messages.success(request, 'Ficha técnica atualizada com sucesso!')
+            return redirect('produto_detail', pk=produto.pk)
+        else:
+            # Consolidar erros e manter os formulários preenchidos
+            all_errors = []
+            for name, fs in [('Matéria Prima', formset_mp), ('Terceirizados', formset_terc), ('Embalagens', formset_emb)]:
+                if not fs.is_valid():
+                    for form in fs:
+                        for field, errors in form.errors.items():
+                            for error in errors:
+                                all_errors.append(f"{name} - {field}: {error}")
+                    for error in fs.non_form_errors():
+                        all_errors.append(f"{name}: {error}")
+            
+            for err in all_errors:
+                messages.error(request, err)
+    else:
+        formset_mp = FormSetBase(queryset=produto.itens_ficha.filter(tipo='MP'), prefix='mp')
+        formset_terc = FormSetBase(queryset=produto.itens_ficha.filter(tipo='TR'), prefix='terc')
+        formset_emb = FormSetBase(queryset=produto.itens_ficha.filter(tipo='EM'), prefix='emb')
+
+    return render(request, 'produtos/ficha_tecnica_form.html', {
+        'produto': produto,
+        'formset_mp': formset_mp,
+        'formset_terc': formset_terc,
+        'formset_emb': formset_emb,
+    })
+
+
+class PrecoListView(ListView):
+    model = PrecoProdutoCanal
+    template_name = 'produtos/preco_list.html'
+    context_object_name = 'precos'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = PrecoProdutoCanal.objects.filter(ativo=True).select_related(
+            'produto', 'canal', 'canal__grupo'
+        )
+
+        # Filtros
+        produto = self.request.GET.get('produto')
+        grupo = self.request.GET.get('grupo')
+        canal = self.request.GET.get('canal')
+
+        if produto:
+            queryset = queryset.filter(produto__sku__icontains=produto)
+        if grupo:
+            queryset = queryset.filter(canal__grupo_id=grupo)
+        if canal:
+            queryset = queryset.filter(canal_id=canal)
+
+        return queryset.order_by('produto__sku', 'canal__grupo__nome', 'canal__nome')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['grupos'] = GrupoCanais.objects.all()
+        context['canais'] = CanalVenda.objects.filter(ativo=True)
+        return context
+
+
+def preco_edit(request, pk):
+    """Edição de preço de um produto/canal"""
+    preco = get_object_or_404(PrecoProdutoCanal, pk=pk)
+
+    if request.method == 'POST':
+        usar_auto = request.POST.get('usar_calculo_automatico') == 'on'
+        preco.usar_calculo_automatico = usar_auto
+
+        if not usar_auto:
+            preco.preco_venda_manual = request.POST.get('preco_venda_manual') or None
+            preco.preco_promocao_manual = request.POST.get('preco_promocao_manual') or None
+            preco.preco_minimo_manual = request.POST.get('preco_minimo_manual') or None
+
+        frete_especifico = request.POST.get('frete_especifico')
+        preco.frete_especifico = frete_especifico if frete_especifico else None
+
+        motivo = request.POST.get('motivo', '')
+
+        try:
+            preco.save(usuario=request.user if request.user.is_authenticated else None, motivo=motivo)
+            messages.success(request, 'Preço atualizado com sucesso!')
+            return redirect('preco_list')
+        except Exception as e:
+            messages.error(request, f'Erro ao salvar: {e}')
+
+    return render(request, 'produtos/preco_edit.html', {'preco': preco})
+
+
+def produto_precos(request, produto_pk):
+    """Gerenciar preços de um produto em todos os canais"""
+    produto = get_object_or_404(Produto, pk=produto_pk)
+    canais = CanalVenda.objects.filter(ativo=True).select_related('grupo')
+
+    if request.method == 'POST':
+        canais_selecionados = request.POST.getlist('canais')
+
+        for canal in canais:
+            if str(canal.pk) in canais_selecionados:
+                # Criar ou ativar preço
+                preco, created = PrecoProdutoCanal.objects.get_or_create(
+                    produto=produto,
+                    canal=canal,
+                    defaults={'ativo': True}
+                )
+                if not created and not preco.ativo:
+                    preco.ativo = True
+                    preco.save()
+            else:
+                # Desativar preço se existir
+                PrecoProdutoCanal.objects.filter(
+                    produto=produto, canal=canal
+                ).update(ativo=False)
+
+        messages.success(request, 'Preços atualizados com sucesso!')
+        return redirect('produto_detail', pk=produto.pk)
+
+    # Canais atualmente ativos para este produto
+    canais_ativos = set(
+        PrecoProdutoCanal.objects.filter(
+            produto=produto, ativo=True
+        ).values_list('canal_id', flat=True)
+    )
+
+    return render(request, 'produtos/produto_precos.html', {
+        'produto': produto,
+        'canais': canais,
+        'canais_ativos': canais_ativos,
+    })
+
+
+class HistoricoListView(ListView):
+    model = HistoricoPreco
+    template_name = 'produtos/historico_list.html'
+    context_object_name = 'historicos'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = HistoricoPreco.objects.all()
+
+        # Filtros
+        produto = self.request.GET.get('produto')
+        canal = self.request.GET.get('canal')
+        data_inicio = self.request.GET.get('data_inicio')
+        data_fim = self.request.GET.get('data_fim')
+
+        if produto:
+            queryset = queryset.filter(sku_produto__icontains=produto)
+        if canal:
+            queryset = queryset.filter(nome_canal__icontains=canal)
+        if data_inicio:
+            queryset = queryset.filter(data_registro__date__gte=data_inicio)
+        if data_fim:
+            queryset = queryset.filter(data_registro__date__lte=data_fim)
+
+        return queryset.order_by('-data_registro')
+
+
+class HistoricoDetailView(DetailView):
+    model = HistoricoPreco
+    template_name = 'produtos/historico_detail.html'
+    context_object_name = 'historico'

@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Preços por Canal{% endblock %}
+{% block page_title %}Preços por Canal{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Lista de Preços</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row mb-3">
+            <div class="col-md-3">
+                <input type="text" name="produto" class="form-control" placeholder="SKU do Produto"
+                       value="{{ request.GET.produto }}">
+            </div>
+            <div class="col-md-3">
+                <select name="grupo" class="form-select">
+                    <option value="">Todos os Grupos</option>
+                    {% for grupo in grupos %}
+                    <option value="{{ grupo.pk }}" {% if request.GET.grupo == grupo.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ grupo.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="canal" class="form-select">
+                    <option value="">Todos os Canais</option>
+                    {% for canal in canais %}
+                    <option value="{{ canal.pk }}" {% if request.GET.canal == canal.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ canal.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Produto</th>
+                        <th>Grupo</th>
+                        <th>Canal</th>
+                        <th class="text-end">Frete</th>
+                        <th class="text-end">Preço Venda</th>
+                        <th class="text-end">Preço Promo</th>
+                        <th class="text-end">Preço Mín.</th>
+                        <th class="text-end">Desc. Máx.</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for preco in precos %}
+                    <tr>
+                        <td><a href="{% url 'produto_detail' preco.produto.pk %}">{{ preco.produto.sku }}</a></td>
+                        <td>{{ preco.produto.titulo|truncatechars:30 }}</td>
+                        <td>{{ preco.canal.grupo.nome }}</td>
+                        <td>{{ preco.canal.nome }}</td>
+                        <td class="text-end">R$ {{ preco.frete_aplicado|floatformat:2 }}</td>
+                        <td class="text-end"><span class="badge bg-primary badge-preco">R$ {{ preco.preco_venda|floatformat:2 }}</span></td>
+                        <td class="text-end"><span class="badge bg-warning text-dark badge-preco">R$ {{ preco.preco_promocao|floatformat:2 }}</span></td>
+                        <td class="text-end"><span class="badge bg-danger badge-preco">R$ {{ preco.preco_minimo|floatformat:2 }}</span></td>
+                        <td class="text-end">{{ preco.desconto_maximo_percentual }}%</td>
+                        <td>
+                            <a href="{% url 'preco_edit' preco.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="10" class="text-center py-4 text-muted">
+                            Nenhum preço encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

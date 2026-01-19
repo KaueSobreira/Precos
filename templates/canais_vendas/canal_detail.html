@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ canal.nome }} - Canais{% endblock %}
+{% block page_title %}Detalhes do Canal{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ canal.nome }}</h5>
+                <a href="{% url 'canal_update' canal.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Grupo:</strong> <a href="{% url 'grupo_detail' canal.grupo.pk %}">{{ canal.grupo.nome }}</a></p>
+                        <p><strong>Status:</strong>
+                            {% if canal.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Herda valores do grupo:</strong>
+                            {% if canal.herdar_grupo %}Sim{% else %}Não{% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Tipo de Frete:</strong> {{ canal.get_tipo_frete_display }}</p>
+                        {% if canal.tipo_frete == 'fixo' %}
+                        <p><strong>Frete Fixo:</strong> R$ {{ canal.frete_fixo|floatformat:2 }}</p>
+                        {% else %}
+                        <p><strong>Tabela de Frete:</strong>
+                            <a href="{% url 'tabela_frete_detail' canal.tabela_frete.pk %}">{{ canal.tabela_frete.nome }}</a>
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <hr>
+                <h6>Parâmetros Efetivos (%)</h6>
+                <div class="row">
+                    <div class="col-md-3"><strong>Imposto:</strong> {{ canal.imposto_efetivo }}%</div>
+                    <div class="col-md-3"><strong>Operação:</strong> {{ canal.operacao_efetivo }}%</div>
+                    <div class="col-md-3"><strong>Lucro:</strong> {{ canal.lucro_efetivo }}%</div>
+                    <div class="col-md-3"><strong>Promoção:</strong> {{ canal.promocao_efetivo }}%</div>
+                    <div class="col-md-3"><strong>Mínimo:</strong> {{ canal.minimo_efetivo }}%</div>
+                    <div class="col-md-3"><strong>Ads:</strong> {{ canal.ads_efetivo }}%</div>
+                    <div class="col-md-3"><strong>Comissão:</strong> {{ canal.comissao_efetivo }}%</div>
+                </div>
+
+                <hr>
+                <h6>Markups Calculados</h6>
+                <div class="row">
+                    <div class="col-md-3"><strong>Markup Frete:</strong> {{ canal.markup_frete|floatformat:4 }}</div>
+                    <div class="col-md-3"><strong>Markup Venda:</strong> {{ canal.markup_venda|floatformat:4 }}</div>
+                    <div class="col-md-3"><strong>Markup Promoção:</strong> {{ canal.markup_promocao|floatformat:4 }}</div>
+                    <div class="col-md-3"><strong>Markup Mínimo:</strong> {{ canal.markup_minimo|floatformat:4 }}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6>Informações</h6>
+                <p class="text-muted small">
+                    Criado em: {{ canal.criado_em|date:"d/m/Y H:i" }}<br>
+                    Atualizado em: {{ canal.atualizado_em|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ tabela.nome }} - Tabelas de Frete{% endblock %}
+{% block page_title %}Detalhes da Tabela de Frete{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ tabela.nome }}</h5>
+                <div>
+                    <a href="{% url 'regras_frete_edit' tabela.pk %}" class="btn btn-sm btn-outline-info">
+                        <i class="bi bi-list-ul"></i> Editar Regras
+                    </a>
+                    <a href="{% url 'tabela_frete_update' tabela.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <p><strong>Tipo:</strong> {{ tabela.get_tipo_display }}</p>
+                <p><strong>Descrição:</strong> {{ tabela.descricao|default:"Sem descrição" }}</p>
+                <p><strong>Status:</strong>
+                    {% if tabela.ativo %}
+                    <span class="badge bg-success">Ativo</span>
+                    {% else %}
+                    <span class="badge bg-secondary">Inativo</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Regras de Frete</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Ordem</th>
+                            <th>Condição</th>
+                            <th class="text-end">Valor do Frete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for regra in regras %}
+                        <tr>
+                            <td>{{ regra.ordem }}</td>
+                            <td>{{ regra }}</td>
+                            <td class="text-end">R$ {{ regra.valor_frete|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-3">
+                                Nenhuma regra cadastrada.
+                                <a href="{% url 'regras_frete_edit' tabela.pk %}">Adicionar regras</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Canais que usam esta tabela</h5>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Canal</th>
+                            <th>Grupo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for canal in canais %}
+                        <tr>
+                            <td><a href="{% url 'canal_detail' canal.pk %}">{{ canal.nome }}</a></td>
+                            <td>{{ canal.grupo.nome }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted py-3">
+                                Nenhum canal usando esta tabela.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6>Informações</h6>
+                <p class="text-muted small">
+                    Criado em: {{ tabela.criado_em|date:"d/m/Y H:i" }}<br>
+                    Atualizado em: {{ tabela.atualizado_em|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

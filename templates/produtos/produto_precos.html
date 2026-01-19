@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Configurar Preços - {{ produto.sku }}{% endblock %}
+{% block page_title %}Configurar Preços por Canal{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Selecionar Canais para: {{ produto.sku }} - {{ produto.titulo }}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            {% regroup canais by grupo as canais_por_grupo %}
+
+            {% for grupo in canais_por_grupo %}
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input grupo-check" id="grupo_{{ grupo.grouper.pk }}"
+                               data-grupo="{{ grupo.grouper.pk }}">
+                        <label class="form-check-label" for="grupo_{{ grupo.grouper.pk }}">
+                            <strong>{{ grupo.grouper.nome }}</strong>
+                        </label>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for canal in grupo.list %}
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input type="checkbox" name="canais" value="{{ canal.pk }}"
+                                       class="form-check-input canal-check" id="canal_{{ canal.pk }}"
+                                       data-grupo="{{ grupo.grouper.pk }}"
+                                       {% if canal.pk in canais_ativos %}checked{% endif %}>
+                                <label class="form-check-label" for="canal_{{ canal.pk }}">
+                                    {{ canal.nome }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Salvar Configuração
+                </button>
+                <a href="{% url 'produto_detail' produto.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.grupo-check').forEach(function(checkbox) {
+    checkbox.addEventListener('change', function() {
+        var grupoId = this.dataset.grupo;
+        var canais = document.querySelectorAll('.canal-check[data-grupo="' + grupoId + '"]');
+        canais.forEach(function(canal) {
+            canal.checked = checkbox.checked;
+        });
+    });
+});
+</script>
+{% endblock %}
+{% endblock %}

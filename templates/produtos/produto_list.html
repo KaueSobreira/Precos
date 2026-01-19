@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Produtos - Sistema de Precificação{% endblock %}
+{% block page_title %}Produtos{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Lista de Produtos</h5>
+        <a href="{% url 'produto_create' %}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> Novo Produto
+        </a>
+    </div>
+    <div class="card-body">
+        <form method="get" class="mb-3">
+            <div class="input-group">
+                <input type="text" name="search" class="form-control" placeholder="Buscar por SKU ou título..." value="{{ request.GET.search }}">
+                <button type="submit" class="btn btn-outline-secondary">
+                    <i class="bi bi-search"></i> Buscar
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>SKU</th>
+                        <th>Título</th>
+                        <th>Dimensões (cm)</th>
+                        <th>Peso (kg)</th>
+                        <th>Custo</th>
+                        <th>Status</th>
+                        <th width="150">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for produto in produtos %}
+                    <tr>
+                        <td><a href="{% url 'produto_detail' produto.pk %}">{{ produto.sku }}</a></td>
+                        <td>{{ produto.titulo|truncatechars:50 }}</td>
+                        <td>{{ produto.largura }} x {{ produto.altura }} x {{ produto.profundidade }}</td>
+                        <td>{{ produto.peso_produto|floatformat:3 }}</td>
+                        <td>
+                            {% if produto.custo == 0 %}
+                            <span class="badge bg-warning text-dark" title="Cadastre a ficha técnica">R$ 0,00</span>
+                            {% else %}
+                            R$ {{ produto.custo|floatformat:2 }}
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if produto.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a href="{% url 'ficha_tecnica_edit' produto.pk %}" class="btn btn-sm btn-outline-success" title="Ficha Técnica">
+                                <i class="bi bi-list-check"></i>
+                            </a>
+                            <a href="{% url 'produto_update' produto.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="{% url 'produto_delete' produto.pk %}" class="btn btn-sm btn-outline-danger" title="Excluir">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="text-center py-4 text-muted">
+                            Nenhum produto encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Anterior</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Próxima</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

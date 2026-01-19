@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ grupo.nome }} - Grupos{% endblock %}
+{% block page_title %}Detalhes do Grupo{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    {{ grupo.nome }}
+                    {% if grupo.is_default %}
+                    <span class="badge bg-primary">Padrão</span>
+                    {% endif %}
+                </h5>
+                <a href="{% url 'grupo_update' grupo.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Editar
+                </a>
+            </div>
+            <div class="card-body">
+                <p>{{ grupo.descricao|default:"Sem descrição" }}</p>
+
+                <h6>Parâmetros Padrão (%)</h6>
+                <div class="row">
+                    <div class="col-md-3"><strong>Imposto:</strong> {{ grupo.imposto }}%</div>
+                    <div class="col-md-3"><strong>Operação:</strong> {{ grupo.operacao }}%</div>
+                    <div class="col-md-3"><strong>Lucro:</strong> {{ grupo.lucro }}%</div>
+                    <div class="col-md-3"><strong>Promoção:</strong> {{ grupo.promocao }}%</div>
+                    <div class="col-md-3"><strong>Mínimo:</strong> {{ grupo.minimo }}%</div>
+                    <div class="col-md-3"><strong>Ads:</strong> {{ grupo.ads }}%</div>
+                    <div class="col-md-3"><strong>Comissão:</strong> {{ grupo.comissao }}%</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Canais deste Grupo</h5>
+                <a href="{% url 'canal_create' %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-circle"></i> Novo Canal
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Tipo Frete</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for canal in canais %}
+                        <tr>
+                            <td><a href="{% url 'canal_detail' canal.pk %}">{{ canal.nome }}</a></td>
+                            <td>{{ canal.get_tipo_frete_display }}</td>
+                            <td>
+                                {% if canal.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'canal_update' canal.pk %}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">
+                                Nenhum canal neste grupo.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6>Informações</h6>
+                <p><strong>Total de Canais:</strong> {{ canais.count }}</p>
+                <p class="text-muted small">
+                    Criado em: {{ grupo.criado_em|date:"d/m/Y H:i" }}<br>
+                    Atualizado em: {{ grupo.atualizado_em|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

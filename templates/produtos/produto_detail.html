@@ -1,0 +1,161 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ produto.sku }} - Produtos{% endblock %}
+{% block page_title %}Detalhes do Produto{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ produto.titulo }}</h5>
+                <div>
+                    <a href="{% url 'produto_update' produto.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar
+                    </a>
+                    <a href="{% url 'produto_precos' produto.pk %}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-tag"></i> Gerenciar Preços
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>SKU:</strong> {{ produto.sku }}</p>
+                        <p><strong>EAN:</strong> {{ produto.ean|default:"-" }}</p>
+                        <p><strong>Status:</strong>
+                            {% if produto.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Dimensões:</strong> {{ produto.largura }} x {{ produto.altura }} x {{ produto.profundidade }} cm</p>
+                        <p><strong>Peso Físico:</strong> {{ produto.peso_fisico|floatformat:3 }} kg</p>
+                        <p><strong>Peso Cúbico:</strong> {{ produto.peso_cubico|floatformat:3 }} kg</p>
+                        <p><strong>Peso Produto (Frete):</strong> <span class="badge bg-info">{{ produto.peso_produto|floatformat:3 }} kg</span></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ficha Técnica -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Ficha Técnica (Kit)</h5>
+                <a href="{% url 'ficha_tecnica_edit' produto.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Editar Ficha
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Código</th>
+                            <th>Descrição</th>
+                            <th class="text-end">Qtd</th>
+                            <th class="text-end">Custo Unit.</th>
+                            <th class="text-end">Custo Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in itens_ficha %}
+                        <tr>
+                            <td>{{ item.codigo }}</td>
+                            <td>{{ item.descricao }}</td>
+                            <td class="text-end">{{ item.quantidade }}</td>
+                            <td class="text-end">R$ {{ item.custo_unitario|floatformat:2 }}</td>
+                            <td class="text-end">R$ {{ item.custo_total|floatformat:2 }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-3">
+                                Nenhum item cadastrado na ficha técnica.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="table-light">
+                            <td colspan="4" class="text-end"><strong>Custo Total do Produto:</strong></td>
+                            <td class="text-end"><strong>R$ {{ produto.custo|floatformat:2 }}</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+
+        <!-- Preços por Canal -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Preços por Canal</h5>
+                <a href="{% url 'produto_precos' produto.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-gear"></i> Configurar Canais
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Grupo</th>
+                            <th>Canal</th>
+                            <th class="text-end">Frete</th>
+                            <th class="text-end">Preço Venda</th>
+                            <th class="text-end">Preço Promo</th>
+                            <th class="text-end">Preço Mín.</th>
+                            <th class="text-end">Desc. Máx.</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for preco in precos_canais %}
+                        <tr>
+                            <td>{{ preco.canal.grupo.nome }}</td>
+                            <td>{{ preco.canal.nome }}</td>
+                            <td class="text-end">R$ {{ preco.frete_aplicado|floatformat:2 }}</td>
+                            <td class="text-end"><span class="badge bg-primary badge-preco">R$ {{ preco.preco_venda|floatformat:2 }}</span></td>
+                            <td class="text-end"><span class="badge bg-warning text-dark badge-preco">R$ {{ preco.preco_promocao|floatformat:2 }}</span></td>
+                            <td class="text-end"><span class="badge bg-danger badge-preco">R$ {{ preco.preco_minimo|floatformat:2 }}</span></td>
+                            <td class="text-end">{{ preco.desconto_maximo_percentual }}%</td>
+                            <td>
+                                <a href="{% url 'preco_edit' preco.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted py-3">
+                                Nenhum canal configurado para este produto.
+                                <a href="{% url 'produto_precos' produto.pk %}">Configurar agora</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card bg-light">
+            <div class="card-body">
+                <h6 class="card-title">Resumo</h6>
+                <hr>
+                <p><strong>Custo:</strong><br>
+                    <span class="fs-4 text-primary">R$ {{ produto.custo|floatformat:2 }}</span>
+                </p>
+                <p><strong>Peso para Frete:</strong><br>
+                    <span class="fs-5">{{ produto.peso_produto|floatformat:3 }} kg</span>
+                </p>
+                <p class="text-muted small">
+                    Cadastrado em: {{ produto.criado_em|date:"d/m/Y H:i" }}<br>
+                    Atualizado em: {{ produto.atualizado_em|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
