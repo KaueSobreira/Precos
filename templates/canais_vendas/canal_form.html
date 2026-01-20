@@ -156,14 +156,22 @@
             </div>
 
             <div class="row">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="mb-3">
                         <label for="id_nota_vendedor" class="form-label">Nota do Vendedor (Rating)</label>
                         {{ form.nota_vendedor }}
-                        <small class="text-muted d-block">Define qual faixa de desconto será aplicada desta tabela.</small>
+                        <small class="text-muted d-block">Para descontos percentuais.</small>
                     </div>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_score" class="form-label">Score do Canal (0-100)</label>
+                        <input type="number" name="score" class="form-control" id="id_score"
+                               value="{{ form.score.value|default:'0' }}">
+                        <small class="text-muted d-block">Para matrizes de Peso x Score.</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
                     <div class="mb-3">
                         <label for="id_tabela_taxa" class="form-label">Tabela de Taxas (Taxa Fixa Venda)</label>
                         {{ form.tabela_taxa }}

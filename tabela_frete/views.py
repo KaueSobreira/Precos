@@ -21,12 +21,20 @@ class RegrasMatrizTemplateView(View):
         ws.title = "Modelo Importação"
 
         # Cabeçalhos
-        headers = ['peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'valor_frete', 'ordem']
+        headers = ['peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'score_inicio', 'score_fim', 'valor_frete', 'ordem', 'excedente (0 ou 1)']
         ws.append(headers)
 
         # Exemplo de dados
-        example = [0.000, 1.000, 0.00, 100.00, 15.90, 1]
-        ws.append(example)
+        # Exemplo normal
+        example1 = [0.000, 1.000, 0.00, 100.00, None, None, 15.90, 1, 0]
+        # Exemplo score
+        example2 = [0.000, 1.000, None, None, 0, 10, 20.00, 1, 0]
+        # Exemplo excedente
+        example3 = [0.000, 1.000, 0.00, 100.00, None, None, 50.00, 1, 1]
+        
+        ws.append(example1)
+        ws.append(example2)
+        ws.append(example3)
 
         # Configurar resposta HTTP
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -47,11 +55,11 @@ class RegrasSimplesTemplateView(View):
         # Cabeçalhos
         # A semântica muda (kg ou R$) mas os campos são os mesmos
         label_unidade = "kg" if tabela.tipo == 'peso' else "R$"
-        headers = [f'inicio ({label_unidade})', f'fim ({label_unidade})', 'valor_frete (R$)']
+        headers = [f'inicio ({label_unidade})', f'fim ({label_unidade})', 'valor_frete (R$)', 'excedente (0 ou 1)']
         ws.append(headers)
 
         # Exemplo de dados
-        example = [0.000, 1.000, 15.90]
+        example = [0.000, 1.000, 15.90, 0]
         ws.append(example)
 
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -81,7 +89,7 @@ class RegrasMatrizImportView(View):
             return redirect('regras_matriz_import', tabela_pk=tabela.pk)
 
         try:
-            wb = openpyxl.load_workbook(arquivo, data_only=True)
+            wb = openpyxl.load_workbook(arquivo, data_only=True) # data_only lê valores, não fórmulas
             ws = wb.active
 
             regras_criadas = []
@@ -90,9 +98,10 @@ class RegrasMatrizImportView(View):
                 if substituir:
                     tabela.regras_matriz.all().delete()
 
+                # Ignorar cabeçalho (começar da linha 2)
                 rows = list(ws.rows)
                 if len(rows) > 0:
-                    data_rows = rows[1:] # Ignorar cabeçalho
+                    data_rows = rows[1:]
                 else:
                     data_rows = []
 
@@ -101,8 +110,11 @@ class RegrasMatrizImportView(View):
                      return redirect('regras_matriz_import', tabela_pk=tabela.pk)
 
                 for i, row in enumerate(data_rows):
+                    # Formato esperado: peso_ini, peso_fim, preco_ini, preco_fim, score_ini, score_fim, valor, ordem, excedente
                     values = [cell.value for cell in row]
-                    if not any(values): continue
+
+                    if not any(values): # Linha vazia
+                        continue
 
                     def clean_decimal(val):
                         if val is None: return None
@@ -110,22 +122,33 @@ class RegrasMatrizImportView(View):
                             val = val.strip().replace(',', '.')
                             if val == '': return None
                         return Decimal(str(val))
+                    
+                    def clean_int(val):
+                        if val is None: return None
+                        try:
+                            return int(val)
+                        except:
+                            return None
 
                     try:
+                        # Colunas: A=0, B=1, ...
                         peso_ini = clean_decimal(values[0])
                         peso_fim = clean_decimal(values[1])
                         preco_ini = clean_decimal(values[2])
                         preco_fim = clean_decimal(values[3])
-                        valor_frete = clean_decimal(values[4])
+                        score_ini = clean_int(values[4])
+                        score_fim = clean_int(values[5])
+                        valor_frete = clean_decimal(values[6])
+                        ordem = clean_int(values[7]) or 0
                         
-                        ordem = 0
-                        if len(values) > 5 and values[5] is not None:
-                            try:
-                                ordem = int(values[5])
-                            except:
-                                ordem = 0
+                        excedente = False
+                        if len(values) > 8:
+                            exc_val = values[8]
+                            if exc_val in [1, '1', True, 'True', 'sim', 'Sim']:
+                                excedente = True
 
-                        if valor_frete is None: continue
+                        if valor_frete is None:
+                            continue 
 
                         regras_criadas.append(RegraFreteMatriz(
                             tabela=tabela,
@@ -133,8 +156,11 @@ class RegrasMatrizImportView(View):
                             peso_fim=peso_fim,
                             preco_inicio=preco_ini,
                             preco_fim=preco_fim,
+                            score_inicio=score_ini,
+                            score_fim=score_fim,
                             valor_frete=valor_frete,
-                            ordem=ordem
+                            ordem=ordem,
+                            excedente=excedente
                         ))
                     except (ValueError, InvalidOperation, IndexError) as e:
                         print(f"Erro linha {i+2}: {e}")
@@ -193,7 +219,7 @@ class RegrasSimplesImportView(View):
                      return redirect('regras_simples_import', tabela_pk=tabela.pk)
 
                 for i, row in enumerate(data_rows):
-                    # Formato esperado: inicio, fim, valor_frete
+                    # Formato esperado: inicio, fim, valor_frete, excedente
                     values = [cell.value for cell in row]
                     if not any(values): continue
 
@@ -209,13 +235,20 @@ class RegrasSimplesImportView(View):
                         fim = clean_decimal(values[1])
                         valor_frete = clean_decimal(values[2])
                         
+                        excedente = False
+                        if len(values) > 3:
+                            exc_val = values[3]
+                            if exc_val in [1, '1', True, 'True', 'sim', 'Sim']:
+                                excedente = True
+                        
                         if valor_frete is None: continue
 
                         regras_criadas.append(RegraFreteSimples(
                             tabela=tabela,
                             inicio=inicio,
                             fim=fim,
-                            valor_frete=valor_frete
+                            valor_frete=valor_frete,
+                            excedente=excedente
                         ))
                     except (ValueError, InvalidOperation, IndexError) as e:
                         print(f"Erro linha {i+2}: {e}")
@@ -245,7 +278,7 @@ class RegrasMatrizBulkEditView(View):
 
         RegraFormSet = modelformset_factory(
             RegraFreteMatriz,
-            fields=['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'valor_frete', 'ativo'],
+            fields=['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'score_inicio', 'score_fim', 'valor_frete', 'ativo', 'excedente'],
             extra=0,
             can_delete=True
         )
@@ -257,7 +290,7 @@ class RegrasMatrizBulkEditView(View):
         tabela = get_object_or_404(TabelaFrete, pk=tabela_pk)
         RegraFormSet = modelformset_factory(
             RegraFreteMatriz,
-            fields=['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'valor_frete', 'ativo'],
+            fields=['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'score_inicio', 'score_fim', 'valor_frete', 'ativo', 'excedente'],
             extra=0,
             can_delete=True
         )
@@ -293,10 +326,10 @@ class TabelaFreteDetailView(DetailView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if self.object.tipo == 'matriz':
-            context['regras'] = self.object.regras_matriz.all().order_by('ordem', 'peso_inicio')
+        if self.object.tipo in ['matriz', 'matriz_score']:
+            context['regras'] = self.object.regras_matriz.all().order_by('excedente', 'ordem', 'peso_inicio')
         else:
-            context['regras'] = self.object.regras_simples.all().order_by('inicio')
+            context['regras'] = self.object.regras_simples.all().order_by('excedente', 'inicio')
         
         context['descontos'] = self.object.descontos_nota.all().order_by('nota')
         context['canais'] = self.object.canais.all()
@@ -305,13 +338,13 @@ class TabelaFreteDetailView(DetailView):
 class TabelaFreteCreateView(CreateView):
     model = TabelaFrete
     template_name = 'canais_vendas/tabela_frete_form.html'
-    fields = ['nome', 'tipo', 'descricao', 'ativo', 'suporta_nota_vendedor', 'adicionar_taxa_fixa', 'valor_taxa_fixa']
+    fields = ['nome', 'tipo', 'descricao', 'ativo', 'suporta_nota_vendedor', 'adicionar_taxa_fixa', 'valor_taxa_fixa', 'usa_tabela_excedente']
     success_url = reverse_lazy('tabela_frete_list')
 
 class TabelaFreteUpdateView(UpdateView):
     model = TabelaFrete
     template_name = 'canais_vendas/tabela_frete_form.html'
-    fields = ['nome', 'tipo', 'descricao', 'ativo', 'suporta_nota_vendedor', 'adicionar_taxa_fixa', 'valor_taxa_fixa']
+    fields = ['nome', 'tipo', 'descricao', 'ativo', 'suporta_nota_vendedor', 'adicionar_taxa_fixa', 'valor_taxa_fixa', 'usa_tabela_excedente']
     def get_success_url(self):
         return reverse('tabela_frete_detail', kwargs={'pk': self.object.pk})
 
@@ -326,7 +359,7 @@ class TabelaFreteDeleteView(DeleteView):
 class RegraMatrizCreateView(CreateView):
     model = RegraFreteMatriz
     template_name = 'tabela_frete/regra_form.html'
-    fields = ['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'valor_frete', 'ativo']
+    fields = ['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'score_inicio', 'score_fim', 'valor_frete', 'ativo', 'excedente']
 
     def dispatch(self, request, *args, **kwargs):
         self.tabela = get_object_or_404(TabelaFrete, pk=kwargs['tabela_pk'])
@@ -348,7 +381,7 @@ class RegraMatrizCreateView(CreateView):
 class RegraMatrizUpdateView(UpdateView):
     model = RegraFreteMatriz
     template_name = 'tabela_frete/regra_form.html'
-    fields = ['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'valor_frete', 'ativo']
+    fields = ['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'score_inicio', 'score_fim', 'valor_frete', 'ativo', 'excedente']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -45,7 +45,7 @@ class CanalCreateView(CreateView):
     fields = [
         'nome', 'grupo', 'descricao', 'ativo', 'herdar_grupo',
         'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao',
-        'tipo_frete', 'frete_fixo', 'tabela_frete', 'tabela_taxa', 'nota_vendedor'
+        'tipo_frete', 'frete_fixo', 'tabela_frete', 'tabela_taxa', 'nota_vendedor', 'score'
     ]
     success_url = reverse_lazy('canal_list')
 
@@ -67,7 +67,7 @@ class CanalUpdateView(UpdateView):
     fields = [
         'nome', 'grupo', 'descricao', 'ativo', 'herdar_grupo',
         'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao',
-        'tipo_frete', 'frete_fixo', 'tabela_frete', 'tabela_taxa', 'nota_vendedor'
+        'tipo_frete', 'frete_fixo', 'tabela_frete', 'tabela_taxa', 'nota_vendedor', 'score'
     ]
 
     def get_success_url(self):

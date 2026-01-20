@@ -43,7 +43,12 @@ class Produto(models.Model):
         custo = self.custo
         
         preco_venda = Decimal('0.00')
-        frete = frete_fixo if frete_fixo is not None else canal.obter_frete(peso_produto=peso)
+        frete = frete_fixo if frete_fixo is not None else canal.obter_frete(
+            peso_produto=peso, 
+            largura=self.largura, 
+            altura=self.altura, 
+            profundidade=self.profundidade
+        )
         taxa = Decimal('0.00')
 
         for _ in range(max_iteracoes):
@@ -54,7 +59,13 @@ class Produto(models.Model):
 
             # 2. Atualiza componentes baseados no novo preço
             nova_taxa = canal.obter_taxa_extra(preco_venda=novo_preco)
-            novo_frete = frete_fixo if frete_fixo is not None else canal.obter_frete(peso_produto=peso, preco_venda=novo_preco)
+            novo_frete = frete_fixo if frete_fixo is not None else canal.obter_frete(
+                peso_produto=peso, 
+                preco_venda=novo_preco,
+                largura=self.largura, 
+                altura=self.altura, 
+                profundidade=self.profundidade
+            )
 
             if novo_preco == preco_venda and nova_taxa == taxa and novo_frete == frete:
                 break
@@ -242,7 +253,13 @@ class PrecoProdutoCanal(models.Model):
         if self.frete_calculado is not None:
             return self.frete_calculado
         # Fallback: calcula em tempo real
-        return self.canal.obter_frete(peso_produto=self.produto.peso_produto, preco_venda=self.preco_venda)
+        return self.canal.obter_frete(
+            peso_produto=self.produto.peso_produto, 
+            preco_venda=self.preco_venda,
+            largura=self.produto.largura,
+            altura=self.produto.altura,
+            profundidade=self.produto.profundidade
+        )
 
     @property
     def preco_venda(self):
@@ -359,7 +376,13 @@ class PrecoProdutoCanal(models.Model):
         if frete_base is not None:
             frete = frete_base
         else:
-            frete = self.canal.obter_frete(peso_produto=peso, preco_venda=preco_venda)
+            frete = self.canal.obter_frete(
+                peso_produto=peso, 
+                preco_venda=preco_venda,
+                largura=self.produto.largura,
+                altura=self.produto.altura,
+                profundidade=self.produto.profundidade
+            )
         taxa = self.canal.obter_taxa_extra(preco_venda=preco_venda)
 
         # Atualiza os campos calculados
@@ -398,7 +421,13 @@ class PrecoProdutoCanal(models.Model):
             if frete_base is not None:
                 frete = frete_base
             else:
-                frete = self.canal.obter_frete(peso_produto=peso, preco_venda=preco_venda)
+                frete = self.canal.obter_frete(
+                    peso_produto=peso, 
+                    preco_venda=preco_venda,
+                    largura=self.produto.largura,
+                    altura=self.produto.altura,
+                    profundidade=self.produto.profundidade
+                )
             taxa = self.canal.obter_taxa_extra(preco_venda=preco_venda)
 
             self.custo_calculado = custo

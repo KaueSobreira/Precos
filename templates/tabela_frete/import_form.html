@@ -15,20 +15,24 @@
                     <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Instruções</h6>
                     <p class="mb-1">O arquivo deve ser um <strong>Excel (.xlsx)</strong> com as seguintes colunas (na ordem):</p>
                     
-                    {% if tabela.tipo == 'matriz' %}
+                    {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
                         <ul class="small mb-2">
                             <li><strong>peso_inicio</strong> (kg)</li>
                             <li><strong>peso_fim</strong> (kg) - deixe vazio para infinito</li>
                             <li><strong>preco_inicio</strong> (R$)</li>
                             <li><strong>preco_fim</strong> (R$) - deixe vazio para infinito</li>
+                            <li><strong>score_inicio</strong> (Rating 0-100)</li>
+                            <li><strong>score_fim</strong> (Rating 0-100) - deixe vazio para infinito</li>
                             <li><strong>valor_frete</strong> (R$)</li>
                             <li><strong>ordem</strong> (número inteiro - opcional)</li>
+                            <li><strong>excedente</strong> (0 = Normal, 1 = Excedente > 1m)</li>
                         </ul>
                     {% else %}
                         <ul class="small mb-2">
                             <li><strong>início</strong> ({% if tabela.tipo == 'peso' %}kg{% else %}R${% endif %})</li>
                             <li><strong>fim</strong> ({% if tabela.tipo == 'peso' %}kg{% else %}R${% endif %}) - deixe vazio para infinito</li>
                             <li><strong>valor_frete</strong> (R$)</li>
+                            <li><strong>excedente</strong> (0 = Normal, 1 = Excedente > 1m)</li>
                         </ul>
                     {% endif %}
                     
@@ -36,7 +40,7 @@
                 </div>
 
                 <div class="mb-4 text-end">
-                    {% if tabela.tipo == 'matriz' %}
+                    {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
                     <a href="{% url 'regras_matriz_template' tabela.pk %}" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-download"></i> Baixar Modelo XLSX (Matriz)
                     </a>

@@ -35,11 +35,18 @@
                         <input type="number" step="0.01" name="valor_frete" class="form-control" value="{{ form.valor_frete.value|default:'' }}" required>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="mb-3 d-flex gap-4">
                         <div class="form-check form-switch">
                             <input type="checkbox" name="ativo" class="form-check-input" id="id_ativo" {% if form.ativo.value %}checked{% endif %}>
                             <label class="form-check-label" for="id_ativo">Ativo</label>
                         </div>
+
+                        {% if tabela.usa_tabela_excedente or object.tabela.usa_tabela_excedente %}
+                        <div class="form-check form-switch">
+                            <input type="checkbox" name="excedente" class="form-check-input" id="id_excedente" {% if form.excedente.value %}checked{% endif %}>
+                            <label class="form-check-label" for="id_excedente">Regra Excedente (>1m)</label>
+                        </div>
+                        {% endif %}
                     </div>
 
                     <div class="mt-3">

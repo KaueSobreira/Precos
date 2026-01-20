@@ -43,6 +43,13 @@
                                 -
                             {% endif %}
                         </p>
+                        <p><strong>Tabela Diferenciada > 1m:</strong>
+                            {% if tabela.usa_tabela_excedente %}
+                                <span class="text-primary"><i class="bi bi-check-circle"></i> Sim</span>
+                            {% else %}
+                                <span class="text-muted"><i class="bi bi-x-circle"></i> Não</span>
+                            {% endif %}
+                        </p>
                     </div>
                 </div>
             </div>
@@ -52,7 +59,7 @@
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">Regras de Frete</h5>
-                {% if tabela.tipo == 'matriz' %}
+                {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
                     <div>
                         <a href="{% url 'regras_matriz_import' tabela.pk %}" class="btn btn-sm btn-outline-dark me-1">
                             <i class="bi bi-file-earmark-spreadsheet"></i> Importar CSV
@@ -76,13 +83,24 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            {% if tabela.tipo == 'matriz' %}
+                            {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
                                 <th>Ordem</th>
                                 <th>Peso (kg)</th>
-                                <th>Preço (R$)</th>
+                                
+                                {% if tabela.tipo == 'matriz_score' %}
+                                    <th>Score</th>
+                                {% else %}
+                                    <th>Preço (R$)</th>
+                                {% endif %}
+
                             {% else %}
                                 <th>Faixa ({{ tabela.get_tipo_display }})</th>
                             {% endif %}
+                            
+                            {% if tabela.usa_tabela_excedente %}
+                                <th class="text-center">Excedente (>1m)</th>
+                            {% endif %}
+
                             <th class="text-end">Valor (R$)</th>
                             <th class="text-end">Ações</th>
                         </tr>
@@ -90,27 +108,44 @@
                     <tbody>
                         {% for regra in regras %}
                         <tr>
-                            {% if tabela.tipo == 'matriz' %}
+                            {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
                                 <td>{{ regra.ordem }}</td>
                                 <td>{{ regra.peso_inicio|default:"0" }} - {{ regra.peso_fim|default:"∞" }}</td>
-                                <td>{{ regra.preco_inicio|default:"0" }} - {{ regra.preco_fim|default:"∞" }}</td>
-                                <td class="text-end">{{ regra.valor_frete }}</td>
-                                <td class="text-end">
-                                    <a href="{% url 'regra_matriz_update' regra.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                                    <a href="{% url 'regra_matriz_delete' regra.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
-                                </td>
+                                
+                                {% if tabela.tipo == 'matriz_score' %}
+                                    <td>{{ regra.score_inicio|default:"0" }} - {{ regra.score_fim|default:"∞" }}</td>
+                                {% else %}
+                                    <td>{{ regra.preco_inicio|default:"0" }} - {{ regra.preco_fim|default:"∞" }}</td>
+                                {% endif %}
+
                             {% else %}
                                 <td>{{ regra.inicio|default:"0" }} - {{ regra.fim|default:"∞" }}</td>
-                                <td class="text-end">{{ regra.valor_frete }}</td>
-                                <td class="text-end">
-                                    <a href="{% url 'regra_simples_update' regra.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                                    <a href="{% url 'regra_simples_delete' regra.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            {% endif %}
+
+                            {% if tabela.usa_tabela_excedente %}
+                                <td class="text-center">
+                                    {% if regra.excedente %}
+                                        <span class="badge bg-warning text-dark">Sim</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border">Não</span>
+                                    {% endif %}
                                 </td>
                             {% endif %}
+
+                            <td class="text-end">{{ regra.valor_frete }}</td>
+                            <td class="text-end">
+                                {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
+                                    <a href="{% url 'regra_matriz_update' regra.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'regra_matriz_delete' regra.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                {% else %}
+                                    <a href="{% url 'regra_simples_update' regra.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'regra_simples_delete' regra.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                {% endif %}
+                            </td>
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="5" class="text-center text-muted py-3">Nenhuma regra cadastrada.</td>
+                            <td colspan="7" class="text-center text-muted py-3">Nenhuma regra cadastrada.</td>
                         </tr>
                         {% endfor %}
                     </tbody>

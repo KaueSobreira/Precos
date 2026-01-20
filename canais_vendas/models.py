@@ -150,6 +150,13 @@ class CanalVenda(models.Model):
         verbose_name='Nota do Vendedor',
         help_text='Nota do vendedor no marketplace (1-5) para cálculo de desconto de frete'
     )
+    
+    # Score do Canal (para cálculo de frete matriz score x peso)
+    score = models.IntegerField(
+        default=0,
+        verbose_name='Score do Canal',
+        help_text='Score usado em tabelas de frete do tipo "Matriz Peso x Score"'
+    )
 
     # Metadados
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
@@ -244,7 +251,7 @@ class CanalVenda(models.Model):
             return Decimal('0')
         return Decimal('100') * (Decimal('1') / denominador)
 
-    def obter_frete(self, peso_produto=None, preco_venda=None):
+    def obter_frete(self, peso_produto=None, preco_venda=None, largura=0, altura=0, profundidade=0):
         """
         Retorna o valor do frete baseado no tipo configurado.
         Se frete fixo, retorna o valor fixo.
@@ -255,24 +262,16 @@ class CanalVenda(models.Model):
             return self.frete_fixo
 
         if self.tabela_frete:
-            if self.tabela_frete.tipo == 'matriz':
-                # Tabela matriz: usa peso e preço combinados
-                return self.tabela_frete.calcular_frete(
-                    peso=peso_produto,
-                    preco=preco_venda,
-                    nota_vendedor=self.nota_vendedor
-                )
-            elif self.tabela_frete.tipo == 'peso' and peso_produto is not None:
-                # O metodo calcular_frete agora suporta argumentos nomeados na nova app
-                return self.tabela_frete.calcular_frete(
-                    peso=peso_produto,
-                    nota_vendedor=self.nota_vendedor
-                )
-            elif self.tabela_frete.tipo == 'preco' and preco_venda is not None:
-                return self.tabela_frete.calcular_frete(
-                    preco=preco_venda,
-                    nota_vendedor=self.nota_vendedor
-                )
+            # Passa todos os parâmetros relevantes para a tabela calcular
+            return self.tabela_frete.calcular_frete(
+                peso=peso_produto,
+                preco=preco_venda,
+                nota_vendedor=self.nota_vendedor,
+                largura=largura,
+                altura=altura,
+                profundidade=profundidade,
+                score=self.score
+            )
 
         return Decimal('0.00')
 
