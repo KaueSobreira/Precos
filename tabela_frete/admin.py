@@ -29,6 +29,10 @@ class TabelaFreteAdmin(admin.ModelAdmin):
         ('Informações Básicas', {
             'fields': ['nome', 'tipo', 'descricao', 'ativo']
         }),
+        ('Taxa Fixa Adicional', {
+            'fields': ['adicionar_taxa_fixa', 'valor_taxa_fixa'],
+            'description': 'Valor fixo adicionado ao frete APÓS o cálculo de descontos.'
+        }),
         ('Descontos', {
             'fields': ['suporta_nota_vendedor'],
             'description': 'Habilite para configurar descontos baseados na nota do vendedor (1-5).'

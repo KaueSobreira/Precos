@@ -14,6 +14,10 @@ class TabelaFrete(models.Model):
     descricao = models.TextField(blank=True)
     ativo = models.BooleanField(default=True)
     suporta_nota_vendedor = models.BooleanField(default=False, verbose_name='Desconto por Nota')
+    
+    # Nova Taxa Fixa na Tabela
+    adicionar_taxa_fixa = models.BooleanField(default=False, verbose_name='Adicionar Taxa Fixa')
+    valor_taxa_fixa = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), verbose_name='Valor da Taxa Fixa')
 
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -31,6 +35,7 @@ class TabelaFrete(models.Model):
         1. Identifica o tipo (Matriz, Peso ou Preço).
         2. Busca a regra correspondente.
         3. Aplica desconto de nota se aplicável.
+        4. Adiciona taxa fixa da tabela se habilitada (APÓS o desconto).
         """
         if peso is None: peso = Decimal('0.000')
         if preco is None: preco = Decimal('0.00')
@@ -53,6 +58,10 @@ class TabelaFrete(models.Model):
                     valor_frete = (valor_frete * fator).quantize(Decimal('0.01'))
             except Exception:
                 pass
+        
+        # Adiciona Taxa Fixa se habilitada (conforme pedido: valor -> desconto -> soma taxa)
+        if self.adicionar_taxa_fixa:
+            valor_frete += self.valor_taxa_fixa
 
         return valor_frete
 
