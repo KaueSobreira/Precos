@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}{% if object %}Editar{% else %}Novo{% endif %} Canal{% endblock %}
 {% block page_title %}{% if object %}Editar{% else %}Novo{% endif %} Canal{% endblock %}
@@ -11,6 +12,7 @@
     <div class="card-body">
         <form method="post">
             {% csrf_token %}
+            {% localize off %}
 
             {% if form.errors %}
             <div class="alert alert-danger">
@@ -175,6 +177,7 @@
                 </button>
                 <a href="{% url 'canal_list' %}" class="btn btn-outline-secondary">Cancelar</a>
             </div>
+            {% endlocalize %}
         </form>
     </div>
 </div>

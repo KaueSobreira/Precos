@@ -37,6 +37,14 @@
                             <a href="{% url 'tabela_frete_detail' canal.tabela_frete.pk %}">{{ canal.tabela_frete.nome }}</a>
                         </p>
                         {% endif %}
+                        
+                        {% if canal.nota_vendedor %}
+                        <p><strong>Nota do Vendedor:</strong> {{ canal.get_nota_vendedor_display }}</p>
+                        {% endif %}
+
+                        {% if canal.tabela_taxa %}
+                        <p><strong>Tabela de Taxas:</strong> {{ canal.tabela_taxa.nome }}</p>
+                        {% endif %}
                     </div>
                 </div>
 
