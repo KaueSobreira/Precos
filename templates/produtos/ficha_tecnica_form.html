@@ -6,17 +6,32 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-md-9">
+    <!-- Resumo do Produto em linha horizontal no topo para economizar espaço lateral -->
+    <div class="col-12 mb-3">
+        <div class="card bg-light">
+            <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Produto:</strong> {{ produto.sku }} - {{ produto.titulo }}
+                </div>
+                <div>
+                    <strong>Custo Total:</strong> 
+                    <span id="resumo-custo-total" class="h5 mb-0 {% if produto.custo == 0 %}text-warning{% else %}text-success{% endif %}">
+                        R$ {{ produto.custo|floatformat:2 }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">Ficha Técnica: {{ produto.sku }} - {{ produto.titulo }}</h5>
+                <h5 class="mb-0">Edição de Ficha Técnica</h5>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
+                <div class="alert alert-info py-2 small mb-3">
                     <i class="bi bi-info-circle"></i>
-                    <strong>Como funciona:</strong> Cadastre os itens que compõem este produto separando por Materia Prima, Terceirizados e Embalagem.
-                    O custo total do item é: <strong>(Quantidade × Custo Unitário × Multiplicador)</strong>.
-                    <strong>O custo total do produto é a soma de todos os itens.</strong>
+                    Cadastre os itens (Materia Prima, Terceirizados e Embalagem). Custo = <strong>(Qtd × Unitário × Mult)</strong>.
                 </div>
 
                 <form method="post" id="form-ficha">
@@ -24,20 +39,20 @@
                     {% localize off %}
                     
                     <!-- MATERIA PRIMA -->
-                    <h5 class="mt-4 text-primary border-bottom pb-2">1. Custo Matéria Prima</h5>
+                    <h6 class="mt-2 text-primary border-bottom pb-1">1. Custo Matéria Prima</h6>
                     {{ formset_mp.management_form }}
                     <div class="table-responsive mb-4">
                         <table class="table table-sm table-hover ficha-table" data-prefix="mp">
                             <thead class="table-light">
-                                <tr>
-                                    <th width="120">Código *</th>
+                                <tr class="small">
+                                    <th style="width: 120px;">Código *</th>
                                     <th>Descrição *</th>
-                                    <th width="80">UND</th>
-                                    <th width="90">QTD *</th>
-                                    <th width="110">VLR Unit. *</th>
-                                    <th width="80" title="Multiplicador (ex: 1.1 para +10%)">Mult.</th>
-                                    <th width="120">VLR Total</th>
-                                    <th width="50">Excluir</th>
+                                    <th style="width: 70px;">UND</th>
+                                    <th style="width: 80px;">QTD *</th>
+                                    <th style="width: 100px;">VLR Unit. *</th>
+                                    <th style="width: 70px;" title="Multiplicador">Mult.</th>
+                                    <th style="width: 110px;" class="text-end">VLR Total</th>
+                                    <th style="width: 40px;" class="text-center"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -46,14 +61,14 @@
                                     <td>
                                         {{ form.id }}
                                         <input type="text" name="{{ form.codigo.name }}" class="form-control form-control-sm"
-                                               value="{{ form.codigo.value|default_if_none:'' }}" placeholder="COD" required>
+                                               value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm"
-                                               value="{{ form.descricao.value|default_if_none:'' }}" placeholder="Descrição" required>
+                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm" style="width: 100%;"
+                                               value="{{ form.descricao.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm">
+                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
                                             {% for value, label in form.fields.unidade.choices %}
                                                 <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
                                             {% endfor %}
@@ -62,63 +77,57 @@
                                     <td>
                                         <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.name }}"
                                                class="form-control form-control-sm qty-input" 
-                                               value="{{ form.quantidade.value|default_if_none:'' }}" placeholder="1" required>
+                                               value="{{ form.quantidade.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.name }}"
                                                class="form-control form-control-sm unit-input" 
-                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" placeholder="0.000" required>
+                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.name }}"
                                                class="form-control form-control-sm mult-input" 
-                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" placeholder="1.00" required>
+                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
                                     </td>
-                                    <td class="text-end">
-                                        {% if form.instance.pk %}
-                                        <strong class="total-display text-success">R$ {{ form.instance.custo_total|floatformat:3 }}</strong>
-                                        {% else %}
-                                        <span class="total-display text-muted">R$ 0,000</span>
-                                        {% endif %}
+                                    <td class="text-end align-middle">
+                                        <span class="total-display small {% if form.instance.pk %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                            R$ {{ form.instance.custo_total|default:0|floatformat:3 }}
+                                        </span>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center align-middle">
                                         {% if form.instance.pk %}
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk" title="Marque para excluir">
-                                        </div>
+                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk" title="Excluir">
                                         {% else %}
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Remover linha">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                            <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
-                        <button type="button" class="btn btn-sm btn-outline-primary add-item" data-prefix="mp">
-                            <i class="bi bi-plus-circle"></i> Adicionar Matéria Prima
+                        <button type="button" class="btn btn-xs btn-outline-primary add-item py-0" data-prefix="mp">
+                            <i class="bi bi-plus"></i> Adicionar Item
                         </button>
-                        <div class="text-end mt-2">
-                            <strong>Subtotal MP: <span class="subtotal-display" id="subtotal-mp">R$ 0,00</span></strong>
+                        <div class="text-end small">
+                            Subtotal MP: <span class="subtotal-display fw-bold" id="subtotal-mp">R$ 0,00</span>
                         </div>
                     </div>
 
-                    <!-- TERCEIRIZADOS -->
-                    <h5 class="mt-4 text-warning border-bottom pb-2">2. Custo Terceirizados</h5>
+                    <!-- TERCEIRIZADOS (Similar layout) -->
+                    <h6 class="mt-4 text-warning border-bottom pb-1">2. Custo Terceirizados</h6>
                     {{ formset_terc.management_form }}
                     <div class="table-responsive mb-4">
                         <table class="table table-sm table-hover ficha-table" data-prefix="terc">
                             <thead class="table-light">
-                                <tr>
-                                    <th width="120">Código *</th>
+                                <tr class="small">
+                                    <th style="width: 120px;">Código *</th>
                                     <th>Descrição *</th>
-                                    <th width="80">UND</th>
-                                    <th width="90">QTD *</th>
-                                    <th width="110">VLR Unit. *</th>
-                                    <th width="80">Mult.</th>
-                                    <th width="120">VLR Total</th>
-                                    <th width="50">Excluir</th>
+                                    <th style="width: 70px;">UND</th>
+                                    <th style="width: 80px;">QTD *</th>
+                                    <th style="width: 100px;">VLR Unit. *</th>
+                                    <th style="width: 70px;">Mult.</th>
+                                    <th style="width: 110px;" class="text-end">VLR Total</th>
+                                    <th style="width: 40px;"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -127,14 +136,14 @@
                                     <td>
                                         {{ form.id }}
                                         <input type="text" name="{{ form.codigo.name }}" class="form-control form-control-sm"
-                                               value="{{ form.codigo.value|default_if_none:'' }}" placeholder="COD" required>
+                                               value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm"
-                                               value="{{ form.descricao.value|default_if_none:'' }}" placeholder="Serviço" required>
+                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm" style="width: 100%;"
+                                               value="{{ form.descricao.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm">
+                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
                                             {% for value, label in form.fields.unidade.choices %}
                                                 <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
                                             {% endfor %}
@@ -143,63 +152,57 @@
                                     <td>
                                         <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.name }}"
                                                class="form-control form-control-sm qty-input" 
-                                               value="{{ form.quantidade.value|default_if_none:'' }}" placeholder="1" required>
+                                               value="{{ form.quantidade.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.name }}"
                                                class="form-control form-control-sm unit-input" 
-                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" placeholder="0.000" required>
+                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.name }}"
                                                class="form-control form-control-sm mult-input" 
-                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" placeholder="1.00" required>
+                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
                                     </td>
-                                    <td class="text-end">
-                                        {% if form.instance.pk %}
-                                        <strong class="total-display text-success">R$ {{ form.instance.custo_total|floatformat:3 }}</strong>
-                                        {% else %}
-                                        <span class="total-display text-muted">R$ 0,000</span>
-                                        {% endif %}
+                                    <td class="text-end align-middle">
+                                        <span class="total-display small {% if form.instance.pk %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                            R$ {{ form.instance.custo_total|default:0|floatformat:3 }}
+                                        </span>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center align-middle">
                                         {% if form.instance.pk %}
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk" title="Marque para excluir">
-                                        </div>
+                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk">
                                         {% else %}
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Remover linha">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                            <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
-                        <button type="button" class="btn btn-sm btn-outline-warning add-item" data-prefix="terc">
-                            <i class="bi bi-plus-circle"></i> Adicionar Terceirizado
+                        <button type="button" class="btn btn-xs btn-outline-warning add-item py-0" data-prefix="terc">
+                            <i class="bi bi-plus"></i> Adicionar Item
                         </button>
-                        <div class="text-end mt-2">
-                            <strong>Subtotal Terc: <span class="subtotal-display" id="subtotal-terc">R$ 0,00</span></strong>
+                        <div class="text-end small">
+                            Subtotal Terc: <span class="subtotal-display fw-bold" id="subtotal-terc">R$ 0,00</span>
                         </div>
                     </div>
 
                     <!-- EMBALAGENS -->
-                    <h5 class="mt-4 text-info border-bottom pb-2">3. Custo Embalagens</h5>
+                    <h6 class="mt-4 text-info border-bottom pb-1">3. Custo Embalagens</h6>
                     {{ formset_emb.management_form }}
                     <div class="table-responsive mb-4">
                         <table class="table table-sm table-hover ficha-table" data-prefix="emb">
                             <thead class="table-light">
-                                <tr>
-                                    <th width="120">Código *</th>
+                                <tr class="small">
+                                    <th style="width: 120px;">Código *</th>
                                     <th>Descrição *</th>
-                                    <th width="80">UND</th>
-                                    <th width="90">QTD *</th>
-                                    <th width="110">VLR Unit. *</th>
-                                    <th width="80">Mult.</th>
-                                    <th width="120">VLR Total</th>
-                                    <th width="50">Excluir</th>
+                                    <th style="width: 70px;">UND</th>
+                                    <th style="width: 80px;">QTD *</th>
+                                    <th style="width: 100px;">VLR Unit. *</th>
+                                    <th style="width: 70px;">Mult.</th>
+                                    <th style="width: 110px;" class="text-end">VLR Total</th>
+                                    <th style="width: 40px;"></th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -208,14 +211,14 @@
                                     <td>
                                         {{ form.id }}
                                         <input type="text" name="{{ form.codigo.name }}" class="form-control form-control-sm"
-                                               value="{{ form.codigo.value|default_if_none:'' }}" placeholder="COD" required>
+                                               value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm"
-                                               value="{{ form.descricao.value|default_if_none:'' }}" placeholder="Embalagem" required>
+                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm" style="width: 100%;"
+                                               value="{{ form.descricao.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm">
+                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
                                             {% for value, label in form.fields.unidade.choices %}
                                                 <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
                                             {% endfor %}
@@ -224,59 +227,51 @@
                                     <td>
                                         <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.name }}"
                                                class="form-control form-control-sm qty-input" 
-                                               value="{{ form.quantidade.value|default_if_none:'' }}" placeholder="1" required>
+                                               value="{{ form.quantidade.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.name }}"
                                                class="form-control form-control-sm unit-input" 
-                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" placeholder="0.000" required>
+                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.name }}"
                                                class="form-control form-control-sm mult-input" 
-                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" placeholder="1.00" required>
+                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
                                     </td>
-                                    <td class="text-end">
-                                        {% if form.instance.pk %}
-                                        <strong class="total-display text-success">R$ {{ form.instance.custo_total|floatformat:3 }}</strong>
-                                        {% else %}
-                                        <span class="total-display text-muted">R$ 0,000</span>
-                                        {% endif %}
+                                    <td class="text-end align-middle">
+                                        <span class="total-display small {% if form.instance.pk %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                            R$ {{ form.instance.custo_total|default:0|floatformat:3 }}
+                                        </span>
                                     </td>
-                                    <td class="text-center">
+                                    <td class="text-center align-middle">
                                         {% if form.instance.pk %}
-                                        <div class="form-check d-flex justify-content-center">
-                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk" title="Marque para excluir">
-                                        </div>
+                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk">
                                         {% else %}
-                                        <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Remover linha">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                            <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
                         </table>
-                        <button type="button" class="btn btn-sm btn-outline-info add-item" data-prefix="emb">
-                            <i class="bi bi-plus-circle"></i> Adicionar Embalagem
+                        <button type="button" class="btn btn-xs btn-outline-info add-item py-0" data-prefix="emb">
+                            <i class="bi bi-plus"></i> Adicionar Item
                         </button>
-                        <div class="text-end mt-2">
-                            <strong>Subtotal Emb: <span class="subtotal-display" id="subtotal-emb">R$ 0,00</span></strong>
+                        <div class="text-end small">
+                            Subtotal Emb: <span class="subtotal-display fw-bold" id="subtotal-emb">R$ 0,00</span>
                         </div>
                     </div>
 
-                    <div class="mt-4 pt-3 border-top">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <button type="submit" class="btn btn-primary btn-lg">
-                                    <i class="bi bi-check-lg"></i> Salvar Tudo
-                                </button>
-                                <a href="{% url 'produto_detail' produto.pk %}" class="btn btn-outline-secondary ms-2">Cancelar</a>
-                            </div>
-                            <div class="text-end">
-                                <h4 class="mb-0">Custo Total: <span id="custo-total-geral" class="text-success">R$ {{ produto.custo|floatformat:2 }}</span></h4>
-                            </div>
+                    <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Salvar Tudo
+                            </button>
+                            <a href="{% url 'produto_detail' produto.pk %}" class="btn btn-outline-secondary ms-2">Cancelar</a>
+                        </div>
+                        <div class="text-end">
+                            <h5 class="mb-0">Custo Total: <span id="custo-total-geral" class="text-success">R$ {{ produto.custo|floatformat:2 }}</span></h5>
                         </div>
                     </div>
                     {% endlocalize %}
@@ -284,36 +279,20 @@
             </div>
         </div>
     </div>
-
-    <div class="col-md-3">
-        <div class="card bg-light">
-            <div class="card-body">
-                <h6>Resumo do Produto</h6>
-                <hr>
-                <p><strong>SKU:</strong> {{ produto.sku }}</p>
-                <p><strong>Título:</strong> {{ produto.titulo }}</p>
-                <hr>
-                <p><strong>Custo Total:</strong></p>
-                <h3 class="{% if produto.custo == 0 %}text-warning{% else %}text-success{% endif %}" id="resumo-custo-total">
-                    R$ {{ produto.custo|floatformat:2 }}
-                </h3>
-            </div>
-        </div>
-    </div>
 </div>
 
-<!-- Template para nova linha (escondido) - Genérico, será adaptado pelo JS -->
+<!-- Template para nova linha (escondido) -->
 <table style="display: none;">
     <tbody id="empty-row-template">
         <tr class="item-row">
             <td>
-                <input type="text" name="form-__prefix__-codigo" class="form-control form-control-sm" placeholder="COD" required>
+                <input type="text" name="form-__prefix__-codigo" class="form-control form-control-sm" required>
             </td>
             <td>
-                <input type="text" name="form-__prefix__-descricao" class="form-control form-control-sm" placeholder="Descrição" required>
+                <input type="text" name="form-__prefix__-descricao" class="form-control form-control-sm" style="width: 100%;" required>
             </td>
             <td>
-                <select name="form-__prefix__-unidade" class="form-select form-select-sm">
+                <select name="form-__prefix__-unidade" class="form-select form-select-sm px-1">
                     {% for value, label in formset_mp.empty_form.fields.unidade.choices %}
                         <option value="{{ value }}" {% if value == 'UN' %}selected{% endif %}>{{ label }}</option>
                     {% endfor %}
@@ -321,23 +300,21 @@
             </td>
             <td>
                 <input type="number" step="0.01" min="0.01" name="form-__prefix__-quantidade"
-                       class="form-control form-control-sm qty-input" placeholder="1" required>
+                       class="form-control form-control-sm qty-input" required>
             </td>
             <td>
                 <input type="number" step="0.001" min="0" name="form-__prefix__-custo_unitario"
-                       class="form-control form-control-sm unit-input" placeholder="0.000" required>
+                       class="form-control form-control-sm unit-input" required>
             </td>
             <td>
                 <input type="number" step="0.01" min="0.01" name="form-__prefix__-multiplicador"
-                       class="form-control form-control-sm mult-input" value="1.00" placeholder="1.00" required>
+                       class="form-control form-control-sm mult-input" value="1.00" required>
             </td>
-            <td class="text-end">
-                <span class="total-display text-muted">R$ 0,000</span>
+            <td class="text-end align-middle">
+                <span class="total-display small text-muted">R$ 0,000</span>
             </td>
-            <td class="text-center">
-                <button type="button" class="btn btn-sm btn-outline-danger remove-row" title="Remover linha">
-                    <i class="bi bi-trash"></i>
-                </button>
+            <td class="text-center align-middle">
+                <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
             </td>
         </tr>
     </tbody>
