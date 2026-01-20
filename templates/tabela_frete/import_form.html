@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Importar Regras - {{ tabela.nome }}{% endblock %}
+{% block page_title %}Importar Regras via CSV{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Importar Regras para: {{ tabela.nome }}</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <h6 class="alert-heading"><i class="bi bi-info-circle"></i> Instruções</h6>
+                    <p class="mb-1">O arquivo deve ser um <strong>Excel (.xlsx)</strong> com as seguintes colunas (na ordem):</p>
+                    <ul class="small mb-2">
+                        <li><strong>peso_inicio</strong> (kg)</li>
+                        <li><strong>peso_fim</strong> (kg) - deixe vazio para infinito</li>
+                        <li><strong>preco_inicio</strong> (R$)</li>
+                        <li><strong>preco_fim</strong> (R$) - deixe vazio para infinito</li>
+                        <li><strong>valor_frete</strong> (R$)</li>
+                        <li><strong>ordem</strong> (número inteiro - opcional)</li>
+                    </ul>
+                    <p class="mb-0 small">A primeira linha (cabeçalho) será ignorada.</p>
+                </div>
+
+                <div class="mb-4 text-end">
+                    <a href="{% url 'regras_matriz_template' tabela.pk %}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-download"></i> Baixar Modelo XLSX
+                    </a>
+                </div>
+
+                <form method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    
+                    <div class="mb-4">
+                        <label for="id_arquivo" class="form-label">Arquivo Excel (.xlsx)</label>
+                        <input type="file" name="arquivo" id="id_arquivo" class="form-control" accept=".xlsx" required>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="substituir" id="id_substituir" checked>
+                            <label class="form-check-label" for="id_substituir">
+                                <strong>Substituir todas as regras existentes</strong>
+                                <div class="form-text">Se marcado, apagará todas as regras atuais desta tabela antes de importar.</div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{% url 'tabela_frete_detail' tabela.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-upload"></i> Importar Regras
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

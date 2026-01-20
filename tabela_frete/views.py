@@ -3,9 +3,139 @@ from django.views.generic import ListView, DetailView, CreateView, UpdateView, D
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
 from django.forms import modelformset_factory
+from django.db import transaction
+from django.http import HttpResponse
+from decimal import Decimal, InvalidOperation
+import openpyxl
+
 from .models import TabelaFrete, RegraFreteMatriz, RegraFreteSimples, DescontoNotaVendedor
 
 # --- Tabela Frete ---
+
+class RegrasMatrizTemplateView(View):
+    """Gera e baixa o modelo XLSX para importação"""
+    
+    def get(self, request, tabela_pk):
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Modelo Importação"
+
+        # Cabeçalhos
+        headers = ['peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'valor_frete', 'ordem']
+        ws.append(headers)
+
+        # Exemplo de dados
+        example = [0.000, 1.000, 0.00, 100.00, 15.90, 1]
+        ws.append(example)
+
+        # Configurar resposta HTTP
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=modelo_importacao_regras.xlsx'
+        
+        wb.save(response)
+        return response
+
+class RegrasMatrizImportView(View):
+    template_name = 'tabela_frete/import_form.html'
+
+    def get(self, request, tabela_pk):
+        tabela = get_object_or_404(TabelaFrete, pk=tabela_pk)
+        return render(request, self.template_name, {'tabela': tabela})
+
+    def post(self, request, tabela_pk):
+        tabela = get_object_or_404(TabelaFrete, pk=tabela_pk)
+        arquivo = request.FILES.get('arquivo')
+        substituir = request.POST.get('substituir') == 'on'
+
+        if not arquivo:
+            messages.error(request, 'Nenhum arquivo enviado.')
+            return redirect('regras_matriz_import', tabela_pk=tabela.pk)
+
+        if not arquivo.name.endswith('.xlsx'):
+            messages.error(request, 'O arquivo deve ser um Excel (.xlsx).')
+            return redirect('regras_matriz_import', tabela_pk=tabela.pk)
+
+        try:
+            wb = openpyxl.load_workbook(arquivo, data_only=True) # data_only lê valores, não fórmulas
+            ws = wb.active
+
+            regras_criadas = []
+            
+            with transaction.atomic():
+                if substituir:
+                    tabela.regras_matriz.all().delete()
+
+                # Ignorar cabeçalho (começar da linha 2)
+                rows = list(ws.rows)
+                if len(rows) > 0:
+                    # Verifica se a primeira linha parece cabeçalho (opcional, mas comum pular row 1)
+                    # Vamos assumir que row 1 é sempre cabeçalho
+                    data_rows = rows[1:]
+                else:
+                    data_rows = []
+
+                if not data_rows:
+                     messages.warning(request, 'Arquivo vazio ou sem dados.')
+                     return redirect('regras_matriz_import', tabela_pk=tabela.pk)
+
+                for i, row in enumerate(data_rows):
+                    # Formato esperado: peso_ini, peso_fim, preco_ini, preco_fim, valor, ordem (opt)
+                    # row é uma tupla de Células
+                    values = [cell.value for cell in row]
+
+                    if not any(values): # Linha vazia
+                        continue
+
+                    def clean_decimal(val):
+                        if val is None: return None
+                        if isinstance(val, str):
+                            val = val.strip().replace(',', '.')
+                            if val == '': return None
+                        return Decimal(str(val))
+
+                    try:
+                        # índices baseados nas colunas A=0, B=1, ...
+                        # Ajustar conforme necessidade se o template mudar
+                        peso_ini = clean_decimal(values[0])
+                        peso_fim = clean_decimal(values[1])
+                        preco_ini = clean_decimal(values[2])
+                        preco_fim = clean_decimal(values[3])
+                        valor_frete = clean_decimal(values[4])
+                        
+                        ordem = 0
+                        if len(values) > 5 and values[5] is not None:
+                            try:
+                                ordem = int(values[5])
+                            except:
+                                ordem = 0
+
+                        if valor_frete is None:
+                            continue # Valor do frete é obrigatório
+
+                        regras_criadas.append(RegraFreteMatriz(
+                            tabela=tabela,
+                            peso_inicio=peso_ini,
+                            peso_fim=peso_fim,
+                            preco_inicio=preco_ini,
+                            preco_fim=preco_fim,
+                            valor_frete=valor_frete,
+                            ordem=ordem
+                        ))
+                    except (ValueError, InvalidOperation, IndexError) as e:
+                        print(f"Erro linha {i+2}: {e}") # +2 porque pulou header e index começa em 0
+                        continue
+
+                if regras_criadas:
+                    RegraFreteMatriz.objects.bulk_create(regras_criadas)
+                    messages.success(request, f'{len(regras_criadas)} regras importadas com sucesso!')
+                else:
+                    messages.warning(request, 'Nenhuma regra válida encontrada no arquivo.')
+
+        except Exception as e:
+            messages.error(request, f'Erro ao processar arquivo: {str(e)}')
+            return redirect('regras_matriz_import', tabela_pk=tabela.pk)
+
+        return redirect('tabela_frete_detail', pk=tabela.pk)
 
 class RegrasMatrizBulkEditView(View):
     template_name = 'tabela_frete/regras_bulk_edit.html'

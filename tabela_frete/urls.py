@@ -11,6 +11,8 @@ urlpatterns = [
 
     # Regras Matriz
     path('<int:tabela_pk>/regras-matriz/bulk/', views.RegrasMatrizBulkEditView.as_view(), name='regras_matriz_bulk_edit'),
+    path('<int:tabela_pk>/regras-matriz/importar/', views.RegrasMatrizImportView.as_view(), name='regras_matriz_import'),
+    path('<int:tabela_pk>/regras-matriz/modelo/', views.RegrasMatrizTemplateView.as_view(), name='regras_matriz_template'),
     path('<int:tabela_pk>/regras-matriz/nova/', views.RegraMatrizCreateView.as_view(), name='regra_matriz_create'),
     path('regras-matriz/<int:pk>/editar/', views.RegraMatrizUpdateView.as_view(), name='regra_matriz_update'),
     path('regras-matriz/<int:pk>/excluir/', views.RegraMatrizDeleteView.as_view(), name='regra_matriz_delete'),
