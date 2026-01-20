@@ -29,7 +29,13 @@
                     <tr>
                         <td><a href="{% url 'tabela_frete_detail' tabela.pk %}">{{ tabela.nome }}</a></td>
                         <td>{{ tabela.get_tipo_display }}</td>
-                        <td>{{ tabela.regras.count }}</td>
+                        <td>
+                            {% if tabela.tipo == 'matriz' %}
+                                {{ tabela.regras_matriz.count }}
+                            {% else %}
+                                {{ tabela.regras.count }}
+                            {% endif %}
+                        </td>
                         <td>{{ tabela.canais.count }}</td>
                         <td>
                             {% if tabela.ativo %}
@@ -39,8 +45,8 @@
                             {% endif %}
                         </td>
                         <td>
-                            <a href="{% url 'regras_frete_edit' tabela.pk %}" class="btn btn-sm btn-outline-info" title="Regras">
-                                <i class="bi bi-list-ul"></i>
+                            <a href="{% url 'tabela_frete_detail' tabela.pk %}" class="btn btn-sm btn-outline-info" title="Detalhes">
+                                <i class="bi bi-eye"></i>
                             </a>
                             <a href="{% url 'tabela_frete_update' tabela.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
                                 <i class="bi bi-pencil"></i>

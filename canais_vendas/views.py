@@ -2,10 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from django.contrib import messages
 from django.urls import reverse_lazy, reverse
-from django.forms import modelformset_factory
 
-from .models import CanalVenda, TabelaFrete, RegraFrete
+from .models import CanalVenda
 from grupo_vendas.models import GrupoCanais
+from tabela_frete.models import TabelaFrete, TabelaTaxa
 
 
 # Views de Canais de Venda
@@ -45,7 +45,7 @@ class CanalCreateView(CreateView):
     fields = [
         'nome', 'grupo', 'descricao', 'ativo', 'herdar_grupo',
         'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao',
-        'tipo_frete', 'frete_fixo', 'tabela_frete'
+        'tipo_frete', 'frete_fixo', 'tabela_frete', 'tabela_taxa'
     ]
     success_url = reverse_lazy('canal_list')
 
@@ -53,6 +53,7 @@ class CanalCreateView(CreateView):
         context = super().get_context_data(**kwargs)
         context['grupos'] = GrupoCanais.objects.all()
         context['tabelas_frete'] = TabelaFrete.objects.filter(ativo=True)
+        context['tabelas_taxa'] = TabelaTaxa.objects.filter(ativo=True)
         return context
 
     def form_valid(self, form):
@@ -66,7 +67,7 @@ class CanalUpdateView(UpdateView):
     fields = [
         'nome', 'grupo', 'descricao', 'ativo', 'herdar_grupo',
         'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao',
-        'tipo_frete', 'frete_fixo', 'tabela_frete'
+        'tipo_frete', 'frete_fixo', 'tabela_frete', 'tabela_taxa'
     ]
 
     def get_success_url(self):
@@ -76,6 +77,7 @@ class CanalUpdateView(UpdateView):
         context = super().get_context_data(**kwargs)
         context['grupos'] = GrupoCanais.objects.all()
         context['tabelas_frete'] = TabelaFrete.objects.filter(ativo=True)
+        context['tabelas_taxa'] = TabelaTaxa.objects.filter(ativo=True)
         return context
 
     def form_valid(self, form):
@@ -91,90 +93,3 @@ class CanalDeleteView(DeleteView):
     def form_valid(self, form):
         messages.success(self.request, 'Canal excluído com sucesso!')
         return super().form_valid(form)
-
-
-# Views de Tabelas de Frete
-class TabelaFreteListView(ListView):
-    model = TabelaFrete
-    template_name = 'canais_vendas/tabela_frete_list.html'
-    context_object_name = 'tabelas'
-
-    def get_queryset(self):
-        return TabelaFrete.objects.prefetch_related('regras', 'canais')
-
-
-class TabelaFreteDetailView(DetailView):
-    model = TabelaFrete
-    template_name = 'canais_vendas/tabela_frete_detail.html'
-    context_object_name = 'tabela'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['regras'] = self.object.regras.filter(ativo=True).order_by('ordem')
-        context['canais'] = self.object.canais.filter(ativo=True)
-        return context
-
-
-class TabelaFreteCreateView(CreateView):
-    model = TabelaFrete
-    template_name = 'canais_vendas/tabela_frete_form.html'
-    fields = ['nome', 'tipo', 'descricao', 'ativo']
-    success_url = reverse_lazy('tabela_frete_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Tabela de frete criada com sucesso!')
-        return super().form_valid(form)
-
-
-class TabelaFreteUpdateView(UpdateView):
-    model = TabelaFrete
-    template_name = 'canais_vendas/tabela_frete_form.html'
-    fields = ['nome', 'tipo', 'descricao', 'ativo']
-
-    def get_success_url(self):
-        return reverse('tabela_frete_detail', kwargs={'pk': self.object.pk})
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Tabela de frete atualizada com sucesso!')
-        return super().form_valid(form)
-
-
-class TabelaFreteDeleteView(DeleteView):
-    model = TabelaFrete
-    template_name = 'canais_vendas/tabela_frete_confirm_delete.html'
-    success_url = reverse_lazy('tabela_frete_list')
-
-    def form_valid(self, form):
-        messages.success(self.request, 'Tabela de frete excluída com sucesso!')
-        return super().form_valid(form)
-
-
-def regras_frete_edit(request, tabela_pk):
-    """Edição das regras de uma tabela de frete"""
-    tabela = get_object_or_404(TabelaFrete, pk=tabela_pk)
-
-    RegraFormSet = modelformset_factory(
-        RegraFrete,
-        fields=['ordem', 'tipo_condicao', 'operador', 'valor_limite', 'valor_frete', 'ativo'],
-        extra=1,
-        can_delete=True
-    )
-
-    if request.method == 'POST':
-        formset = RegraFormSet(request.POST, queryset=tabela.regras.all())
-        if formset.is_valid():
-            instances = formset.save(commit=False)
-            for instance in instances:
-                instance.tabela = tabela
-                instance.save()
-            for obj in formset.deleted_objects:
-                obj.delete()
-            messages.success(request, 'Regras de frete atualizadas com sucesso!')
-            return redirect('tabela_frete_detail', pk=tabela.pk)
-    else:
-        formset = RegraFormSet(queryset=tabela.regras.all().order_by('ordem'))
-
-    return render(request, 'canais_vendas/regras_frete_form.html', {
-        'tabela': tabela,
-        'formset': formset,
-    })

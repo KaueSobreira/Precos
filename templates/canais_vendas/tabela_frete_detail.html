@@ -10,8 +10,8 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">{{ tabela.nome }}</h5>
                 <div>
-                    <a href="{% url 'regras_frete_edit' tabela.pk %}" class="btn btn-sm btn-outline-info">
-                        <i class="bi bi-list-ul"></i> Editar Regras
+                    <a href="{% url 'admin:tabela_frete_tabelafrete_change' tabela.pk %}" class="btn btn-sm btn-outline-info" target="_blank">
+                        <i class="bi bi-list-ul"></i> Gerenciar Regras (Admin)
                     </a>
                     <a href="{% url 'tabela_frete_update' tabela.pk %}" class="btn btn-sm btn-outline-primary">
                         <i class="bi bi-pencil"></i> Editar
@@ -45,20 +45,36 @@
                         </tr>
                     </thead>
                     <tbody>
-                        {% for regra in regras %}
-                        <tr>
-                            <td>{{ regra.ordem }}</td>
-                            <td>{{ regra }}</td>
-                            <td class="text-end">R$ {{ regra.valor_frete|floatformat:2 }}</td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="3" class="text-center text-muted py-3">
-                                Nenhuma regra cadastrada.
-                                <a href="{% url 'regras_frete_edit' tabela.pk %}">Adicionar regras</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
+                        {% if tabela.tipo == 'matriz' %}
+                            {% for regra in tabela.regras_matriz.all %}
+                            <tr>
+                                <td>{{ regra.ordem }}</td>
+                                <td>{{ regra }}</td>
+                                <td class="text-end">R$ {{ regra.valor_frete|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">
+                                    Nenhuma regra cadastrada.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            {# Fallback para legado se houver #}
+                            {% for regra in tabela.regras.all %}
+                            <tr>
+                                <td>{{ regra.ordem }}</td>
+                                <td>{{ regra }}</td>
+                                <td class="text-end">R$ {{ regra.valor_frete|floatformat:2 }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">
+                                    Nenhuma regra cadastrada.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
                     </tbody>
                 </table>
             </div>

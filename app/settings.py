@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'grupo_vendas',
     'canais_vendas',
     'produtos',
+    'tabela_frete',
 ]
 
 MIDDLEWARE = [
@@ -68,34 +69,34 @@ WSGI_APPLICATION = 'app.wsgi.application'
 # Database
 # PostgreSQL em produção, SQLite para desenvolvimento local
 
-if os.environ.get('DATABASE_URL'):
-    # Produção com PostgreSQL
-    import dj_database_url
-    DATABASES = {
-        'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
-    }
-else:
-    # Desenvolvimento com PostgreSQL local ou SQLite
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('DB_NAME', 'precos'),
-            'USER': os.environ.get('DB_USER', 'postgres'),
-            'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
-            'HOST': os.environ.get('DB_HOST', 'localhost'),
-            'PORT': os.environ.get('DB_PORT', '5432'),
-        }
-    }
+# if os.environ.get('DATABASE_URL'):
+#     # Produção com PostgreSQL
+#     import dj_database_url
+#     DATABASES = {
+#         'default': dj_database_url.config(default=os.environ.get('DATABASE_URL'))
+#     }
+# else:
+#     # Desenvolvimento com PostgreSQL local ou SQLite
+#     DATABASES = {
+#         'default': {
+#             'ENGINE': 'django.db.backends.postgresql',
+#             'NAME': os.environ.get('DB_NAME', 'precos'),
+#             'USER': os.environ.get('DB_USER', 'postgres'),
+#             'PASSWORD': os.environ.get('DB_PASSWORD', 'postgres'),
+#             'HOST': os.environ.get('DB_HOST', 'localhost'),
+#             'PORT': os.environ.get('DB_PORT', '5432'),
+#         }
+#     }
 
 # Fallback para SQLite se PostgreSQL não estiver disponível
-USE_SQLITE = os.environ.get('USE_SQLITE', 'False') == 'True'
-if USE_SQLITE:
-    DATABASES = {
+# USE_SQLITE = os.environ.get('USE_SQLITE', 'False') == 'True'
+# if USE_SQLITE:
+DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
             'NAME': BASE_DIR / 'db.sqlite3',
         }
-    }
+}
 
 
 # Password validation
