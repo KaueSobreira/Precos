@@ -123,6 +123,9 @@
                 <a href="{% url 'ficha_tecnica_edit' object.pk %}" class="btn btn-outline-success">
                     <i class="bi bi-list-check"></i> Ficha Técnica
                 </a>
+                <a href="{% url 'titulos_edit' object.pk %}" class="btn btn-outline-info">
+                    <i class="bi bi-tags"></i> Títulos Secundários
+                </a>
                 <a href="{% url 'produto_detail' object.pk %}" class="btn btn-outline-secondary">Cancelar</a>
                 {% else %}
                 <a href="{% url 'produto_list' %}" class="btn btn-outline-secondary">Cancelar</a>
