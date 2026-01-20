@@ -5,7 +5,7 @@ from .models import Produto, TituloProduto, ItemFichaTecnica, PrecoProdutoCanal,
 class TituloProdutoInline(admin.TabularInline):
     model = TituloProduto
     extra = 1
-    fields = ['sku', 'titulo', 'ean', 'ativo']
+    fields = ['titulo', 'ativo']
 
 
 class ItemFichaTecnicaInline(admin.TabularInline):
@@ -28,7 +28,7 @@ class PrecoProdutoCanalInline(admin.TabularInline):
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
     list_display = ['sku', 'titulo', 'custo', 'qtd_titulos', 'ativo']
-    search_fields = ['sku', 'titulo', 'titulos__sku', 'titulos__titulo']
+    search_fields = ['sku', 'titulo', 'titulos__titulo']
     list_filter = ['ativo']
     inlines = [TituloProdutoInline, ItemFichaTecnicaInline, PrecoProdutoCanalInline]
 
@@ -39,15 +39,15 @@ class ProdutoAdmin(admin.ModelAdmin):
 
 @admin.register(TituloProduto)
 class TituloProdutoAdmin(admin.ModelAdmin):
-    list_display = ['sku', 'titulo', 'produto_pai_sku', 'custo', 'ativo']
+    list_display = ['titulo', 'produto_pai_sku', 'custo', 'ativo']
     list_filter = ['ativo', 'produto']
-    search_fields = ['sku', 'titulo', 'produto__sku', 'produto__titulo']
+    search_fields = ['titulo', 'produto__sku', 'produto__titulo']
     raw_id_fields = ['produto']
     readonly_fields = ['produto_pai_sku', 'titulo_pai', 'custo', 'peso_produto', 'dimensoes']
 
     fieldsets = (
         ('Identificação', {
-            'fields': ('produto', 'sku', 'titulo', 'ean', 'ativo')
+            'fields': ('produto', 'titulo', 'ativo')
         }),
         ('Dados Herdados do Produto Pai (somente leitura)', {
             'fields': ('produto_pai_sku', 'titulo_pai', 'custo', 'peso_produto', 'dimensoes'),

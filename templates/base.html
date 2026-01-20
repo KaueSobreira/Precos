@@ -160,8 +160,13 @@
             <div class="section-divider">Precificação</div>
 
             <li class="nav-item">
-                <a class="nav-link {% if 'preco' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'preco_list' %}">
-                    <i class="bi bi-tag"></i> Preços por Canal
+                <a class="nav-link {% if 'tabela_precos' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'tabela_precos' %}">
+                    <i class="bi bi-table"></i> Tabela de Preços
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'preco_list' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'preco_list' %}">
+                    <i class="bi bi-tag"></i> Gerenciar Preços
                 </a>
             </li>
             <li class="nav-item">

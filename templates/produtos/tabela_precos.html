@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+
+{% block title %}Tabela de Preços (Completa){% endblock %}
+{% block page_title %}Tabela de Preços{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Tabela Completa (Principal e Variações)</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info py-2 small mb-3">
+            <i class="bi bi-info-circle"></i>
+            Esta tabela exibe todos os produtos e seus títulos secundários. 
+            Títulos secundários herdam os preços do produto principal.
+        </div>
+
+        <form method="get" class="row mb-3">
+            <div class="col-md-3">
+                <input type="text" name="search" class="form-control" placeholder="SKU ou Título"
+                       value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="grupo" class="form-select">
+                    <option value="">Todos os Grupos</option>
+                    {% for grupo in grupos %}
+                    <option value="{{ grupo.pk }}" {% if request.GET.grupo == grupo.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ grupo.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="canal" class="form-select">
+                    <option value="">Todos os Canais</option>
+                    {% for canal in canais %}
+                    <option value="{{ canal.pk }}" {% if request.GET.canal == canal.pk|stringformat:"i" %}selected{% endif %}>
+                        {{ canal.nome }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search"></i> Pesquisar
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                    <tr>
+                        <th>Título Anúncio</th>
+                        <th>SKU (Pai)</th>
+                        <th>Grupo</th>
+                        <th>Canal</th>
+                        <th class="text-end">Frete</th>
+                        <th class="text-end">Preço Venda</th>
+                        <th class="text-end">Preço Promo</th>
+                        <th class="text-end">Preço Mín.</th>
+                        <th>Tipo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td>
+                            <strong>{{ row.titulo }}</strong>
+                        </td>
+                        <td>
+                            <a href="{% url 'produto_detail' row.obj.produto.pk %}" class="text-decoration-none">
+                                {{ row.obj.produto.sku }}
+                            </a>
+                        </td>
+                        <td>{{ row.obj.canal.grupo.nome }}</td>
+                        <td>{{ row.obj.canal.nome }}</td>
+                        <td class="text-end">R$ {{ row.obj.frete_aplicado|floatformat:2 }}</td>
+                        <td class="text-end"><span class="badge bg-primary badge-preco">R$ {{ row.obj.preco_venda|floatformat:2 }}</span></td>
+                        <td class="text-end"><span class="badge bg-warning text-dark badge-preco">R$ {{ row.obj.preco_promocao|floatformat:2 }}</span></td>
+                        <td class="text-end"><span class="badge bg-danger badge-preco">R$ {{ row.obj.preco_minimo|floatformat:2 }}</span></td>
+                        <td>
+                            {% if row.is_main %}
+                            <span class="badge bg-secondary">Principal</span>
+                            {% else %}
+                            <span class="badge bg-info text-dark">Variação</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted">
+                            Nenhum registro encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="text-muted small text-end mt-2">
+            Mostrando {{ rows|length }} registros.
+        </div>
+    </div>
+</div>
+{% endblock %}

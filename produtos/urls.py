@@ -20,6 +20,7 @@ urlpatterns = [
 
     # Preços por Canal
     path('precos/', views.PrecoListView.as_view(), name='preco_list'),
+    path('precos/tabela/', views.TabelaPrecosView.as_view(), name='tabela_precos'),
     path('precos/<int:pk>/editar/', views.preco_edit, name='preco_edit'),
     path('produtos/<int:produto_pk>/precos/', views.produto_precos, name='produto_precos'),
 

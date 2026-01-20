@@ -53,18 +53,14 @@
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
-                            <th>SKU</th>
                             <th>Título</th>
-                            <th>EAN</th>
                             <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for titulo in titulos %}
                         <tr>
-                            <td><code>{{ titulo.sku }}</code></td>
                             <td>{{ titulo.titulo }}</td>
-                            <td>{{ titulo.ean|default:"-" }}</td>
                             <td>
                                 {% if titulo.ativo %}
                                 <span class="badge bg-success">Ativo</span>
@@ -75,7 +71,7 @@
                         </tr>
                         {% empty %}
                         <tr>
-                            <td colspan="4" class="text-center text-muted py-3">
+                            <td colspan="2" class="text-center text-muted py-3">
                                 Nenhum título secundário cadastrado.
                                 <a href="{% url 'titulos_edit' produto.pk %}">Adicionar agora</a>
                             </td>

@@ -82,9 +82,7 @@ class TituloProduto(models.Model):
     Útil para anúncios diferentes do mesmo produto em marketplaces.
     """
     produto = models.ForeignKey(Produto, related_name='titulos', on_delete=models.CASCADE)
-    sku = models.CharField(max_length=50, unique=True, verbose_name='SKU do Título')
     titulo = models.CharField(max_length=255, verbose_name='Título')
-    ean = models.CharField(max_length=20, blank=True, verbose_name='EAN')
     ativo = models.BooleanField(default=True)
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
@@ -95,7 +93,7 @@ class TituloProduto(models.Model):
         ordering = ['produto', 'titulo']
 
     def __str__(self):
-        return f"{self.sku} - {self.titulo}"
+        return f"{self.produto.sku} - {self.titulo}"
 
     # ========================================
     # Propriedades herdadas do produto pai

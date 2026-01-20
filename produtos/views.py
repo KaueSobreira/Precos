@@ -42,7 +42,6 @@ class ProdutoListView(ListView):
             queryset = queryset.filter(
                 Q(sku__icontains=search) |
                 Q(titulo__icontains=search) |
-                Q(titulos__sku__icontains=search) |
                 Q(titulos__titulo__icontains=search)
             ).distinct()
         return queryset.order_by('-criado_em')
@@ -104,7 +103,7 @@ def titulos_edit(request, produto_pk):
 
     TituloFormSet = modelformset_factory(
         TituloProduto,
-        fields=['sku', 'titulo', 'ean', 'ativo'],
+        fields=['titulo', 'ativo'],
         extra=0,
         can_delete=True
     )
@@ -222,7 +221,6 @@ class PrecoListView(ListView):
             queryset = queryset.filter(
                 Q(produto__sku__icontains=produto) |
                 Q(produto__titulo__icontains=produto) |
-                Q(produto__titulos__sku__icontains=produto) |
                 Q(produto__titulos__titulo__icontains=produto)
             ).distinct()
         if grupo:
@@ -340,3 +338,80 @@ class HistoricoDetailView(DetailView):
     model = HistoricoPreco
     template_name = 'produtos/historico_detail.html'
     context_object_name = 'historico'
+
+
+class TabelaPrecosView(ListView):
+    model = PrecoProdutoCanal
+    template_name = 'produtos/tabela_precos.html'
+    context_object_name = 'precos'
+    paginate_by = 50
+
+    def get_queryset(self):
+        queryset = PrecoProdutoCanal.objects.filter(ativo=True).select_related(
+            'produto', 'canal', 'canal__grupo'
+        ).prefetch_related('produto__titulos')
+
+        # Filtros
+        search = self.request.GET.get('search')
+        grupo = self.request.GET.get('grupo')
+        canal = self.request.GET.get('canal')
+
+        if grupo:
+            queryset = queryset.filter(canal__grupo_id=grupo)
+        if canal:
+            queryset = queryset.filter(canal_id=canal)
+        
+        if search:
+            # Filtra se houver match em qualquer título (Pai ou Filho) ou SKU
+            queryset = queryset.filter(
+                Q(produto__sku__icontains=search) |
+                Q(produto__titulo__icontains=search) |
+                Q(produto__titulos__titulo__icontains=search)
+            ).distinct()
+
+        return queryset.order_by('produto__sku', 'canal__grupo__nome', 'canal__nome')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Expandir os resultados da página atual
+        page_precos = context['object_list']
+        search = self.request.GET.get('search', '').lower()
+        rows = []
+
+        for preco in page_precos:
+            # 1. Título Principal
+            # Se não tem busca, OU se tem busca e bate com SKU ou Título Principal
+            show_main = True
+            if search:
+                if not (search in preco.produto.sku.lower() or search in preco.produto.titulo.lower()):
+                    show_main = False
+            
+            if show_main:
+                rows.append({
+                    'titulo': preco.produto.titulo,
+                    'obj': preco,
+                    'is_main': True
+                })
+
+            # 2. Títulos Secundários
+            for titulo_sec in preco.produto.titulos.all():
+                if not titulo_sec.ativo:
+                    continue
+                
+                show_sec = True
+                if search:
+                    if search not in titulo_sec.titulo.lower():
+                        show_sec = False
+                
+                if show_sec:
+                    rows.append({
+                        'titulo': titulo_sec.titulo,
+                        'obj': preco,
+                        'is_main': False
+                    })
+        
+        context['rows'] = rows
+        context['grupos'] = GrupoCanais.objects.all()
+        context['canais'] = CanalVenda.objects.filter(ativo=True)
+        return context
