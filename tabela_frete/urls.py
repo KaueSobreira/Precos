@@ -19,6 +19,8 @@ urlpatterns = [
 
     # Regras Simples
     path('<int:tabela_pk>/regras-simples/nova/', views.RegraSimplesCreateView.as_view(), name='regra_simples_create'),
+    path('<int:tabela_pk>/regras-simples/importar/', views.RegrasSimplesImportView.as_view(), name='regras_simples_import'),
+    path('<int:tabela_pk>/regras-simples/modelo/', views.RegrasSimplesTemplateView.as_view(), name='regras_simples_template'),
     path('regras-simples/<int:pk>/editar/', views.RegraSimplesUpdateView.as_view(), name='regra_simples_update'),
     path('regras-simples/<int:pk>/excluir/', views.RegraSimplesDeleteView.as_view(), name='regra_simples_delete'),
 

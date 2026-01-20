@@ -35,6 +35,31 @@ class RegrasMatrizTemplateView(View):
         wb.save(response)
         return response
 
+class RegrasSimplesTemplateView(View):
+    """Gera e baixa o modelo XLSX para importação de Regras Simples"""
+    
+    def get(self, request, tabela_pk):
+        tabela = get_object_or_404(TabelaFrete, pk=tabela_pk)
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Modelo Importação"
+
+        # Cabeçalhos
+        # A semântica muda (kg ou R$) mas os campos são os mesmos
+        label_unidade = "kg" if tabela.tipo == 'peso' else "R$"
+        headers = [f'inicio ({label_unidade})', f'fim ({label_unidade})', 'valor_frete (R$)']
+        ws.append(headers)
+
+        # Exemplo de dados
+        example = [0.000, 1.000, 15.90]
+        ws.append(example)
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = 'attachment; filename=modelo_importacao_regras_simples.xlsx'
+        
+        wb.save(response)
+        return response
+
 class RegrasMatrizImportView(View):
     template_name = 'tabela_frete/import_form.html'
 
@@ -56,7 +81,7 @@ class RegrasMatrizImportView(View):
             return redirect('regras_matriz_import', tabela_pk=tabela.pk)
 
         try:
-            wb = openpyxl.load_workbook(arquivo, data_only=True) # data_only lê valores, não fórmulas
+            wb = openpyxl.load_workbook(arquivo, data_only=True)
             ws = wb.active
 
             regras_criadas = []
@@ -65,12 +90,9 @@ class RegrasMatrizImportView(View):
                 if substituir:
                     tabela.regras_matriz.all().delete()
 
-                # Ignorar cabeçalho (começar da linha 2)
                 rows = list(ws.rows)
                 if len(rows) > 0:
-                    # Verifica se a primeira linha parece cabeçalho (opcional, mas comum pular row 1)
-                    # Vamos assumir que row 1 é sempre cabeçalho
-                    data_rows = rows[1:]
+                    data_rows = rows[1:] # Ignorar cabeçalho
                 else:
                     data_rows = []
 
@@ -79,12 +101,8 @@ class RegrasMatrizImportView(View):
                      return redirect('regras_matriz_import', tabela_pk=tabela.pk)
 
                 for i, row in enumerate(data_rows):
-                    # Formato esperado: peso_ini, peso_fim, preco_ini, preco_fim, valor, ordem (opt)
-                    # row é uma tupla de Células
                     values = [cell.value for cell in row]
-
-                    if not any(values): # Linha vazia
-                        continue
+                    if not any(values): continue
 
                     def clean_decimal(val):
                         if val is None: return None
@@ -94,8 +112,6 @@ class RegrasMatrizImportView(View):
                         return Decimal(str(val))
 
                     try:
-                        # índices baseados nas colunas A=0, B=1, ...
-                        # Ajustar conforme necessidade se o template mudar
                         peso_ini = clean_decimal(values[0])
                         peso_fim = clean_decimal(values[1])
                         preco_ini = clean_decimal(values[2])
@@ -109,8 +125,7 @@ class RegrasMatrizImportView(View):
                             except:
                                 ordem = 0
 
-                        if valor_frete is None:
-                            continue # Valor do frete é obrigatório
+                        if valor_frete is None: continue
 
                         regras_criadas.append(RegraFreteMatriz(
                             tabela=tabela,
@@ -122,7 +137,7 @@ class RegrasMatrizImportView(View):
                             ordem=ordem
                         ))
                     except (ValueError, InvalidOperation, IndexError) as e:
-                        print(f"Erro linha {i+2}: {e}") # +2 porque pulou header e index começa em 0
+                        print(f"Erro linha {i+2}: {e}")
                         continue
 
                 if regras_criadas:
@@ -134,6 +149,87 @@ class RegrasMatrizImportView(View):
         except Exception as e:
             messages.error(request, f'Erro ao processar arquivo: {str(e)}')
             return redirect('regras_matriz_import', tabela_pk=tabela.pk)
+
+        return redirect('tabela_frete_detail', pk=tabela.pk)
+
+class RegrasSimplesImportView(View):
+    template_name = 'tabela_frete/import_form.html'
+
+    def get(self, request, tabela_pk):
+        tabela = get_object_or_404(TabelaFrete, pk=tabela_pk)
+        return render(request, self.template_name, {'tabela': tabela})
+
+    def post(self, request, tabela_pk):
+        tabela = get_object_or_404(TabelaFrete, pk=tabela_pk)
+        arquivo = request.FILES.get('arquivo')
+        substituir = request.POST.get('substituir') == 'on'
+
+        if not arquivo:
+            messages.error(request, 'Nenhum arquivo enviado.')
+            return redirect('regras_simples_import', tabela_pk=tabela.pk)
+
+        if not arquivo.name.endswith('.xlsx'):
+            messages.error(request, 'O arquivo deve ser um Excel (.xlsx).')
+            return redirect('regras_simples_import', tabela_pk=tabela.pk)
+
+        try:
+            wb = openpyxl.load_workbook(arquivo, data_only=True)
+            ws = wb.active
+
+            regras_criadas = []
+            
+            with transaction.atomic():
+                if substituir:
+                    tabela.regras_simples.all().delete()
+
+                rows = list(ws.rows)
+                if len(rows) > 0:
+                    data_rows = rows[1:] # Ignorar cabeçalho
+                else:
+                    data_rows = []
+
+                if not data_rows:
+                     messages.warning(request, 'Arquivo vazio ou sem dados.')
+                     return redirect('regras_simples_import', tabela_pk=tabela.pk)
+
+                for i, row in enumerate(data_rows):
+                    # Formato esperado: inicio, fim, valor_frete
+                    values = [cell.value for cell in row]
+                    if not any(values): continue
+
+                    def clean_decimal(val):
+                        if val is None: return None
+                        if isinstance(val, str):
+                            val = val.strip().replace(',', '.')
+                            if val == '': return None
+                        return Decimal(str(val))
+
+                    try:
+                        inicio = clean_decimal(values[0])
+                        fim = clean_decimal(values[1])
+                        valor_frete = clean_decimal(values[2])
+                        
+                        if valor_frete is None: continue
+
+                        regras_criadas.append(RegraFreteSimples(
+                            tabela=tabela,
+                            inicio=inicio,
+                            fim=fim,
+                            valor_frete=valor_frete
+                        ))
+                    except (ValueError, InvalidOperation, IndexError) as e:
+                        print(f"Erro linha {i+2}: {e}")
+                        continue
+
+                if regras_criadas:
+                    RegraFreteSimples.objects.bulk_create(regras_criadas)
+                    messages.success(request, f'{len(regras_criadas)} regras importadas com sucesso!')
+                else:
+                    messages.warning(request, 'Nenhuma regra válida encontrada no arquivo.')
+
+        except Exception as e:
+            messages.error(request, f'Erro ao processar arquivo: {str(e)}')
+            return redirect('regras_simples_import', tabela_pk=tabela.pk)
 
         return redirect('tabela_frete_detail', pk=tabela.pk)
 

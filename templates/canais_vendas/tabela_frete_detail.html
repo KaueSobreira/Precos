@@ -62,9 +62,14 @@
                         </a>
                     </div>
                 {% else %}
-                    <a href="{% url 'regra_simples_create' tabela.pk %}" class="btn btn-sm btn-primary">
-                        <i class="bi bi-plus-lg"></i> Nova Regra Simples
-                    </a>
+                    <div>
+                        <a href="{% url 'regras_simples_import' tabela.pk %}" class="btn btn-sm btn-outline-dark me-1">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Importar XLSX
+                        </a>
+                        <a href="{% url 'regra_simples_create' tabela.pk %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-lg"></i> Nova Regra Simples
+                        </a>
+                    </div>
                 {% endif %}
             </div>
             <div class="card-body p-0">
