@@ -103,7 +103,11 @@ class PrecoProdutoCanal(models.Model):
     produto = models.ForeignKey(Produto, related_name='precos_canais', on_delete=models.CASCADE)
     canal = models.ForeignKey(CanalVenda, related_name='precos_produtos', on_delete=models.CASCADE)
     usar_calculo_automatico = models.BooleanField(default=True)
+    
     preco_venda_manual = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    preco_promocao_manual = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    preco_minimo_manual = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    
     frete_especifico = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     ativo = models.BooleanField(default=True)
 
@@ -111,6 +115,8 @@ class PrecoProdutoCanal(models.Model):
     def frete_aplicado(self):
         if self.frete_especifico is not None: return self.frete_especifico
         # Preço de venda calculado para obter o frete correto da matriz
+        # Nota: Idealmente o frete depende do preço que está sendo calculado (venda/promo/min), 
+        # mas para exibição geral usamos o de venda como base.
         return self.canal.obter_frete(peso_produto=self.produto.peso_produto, preco_venda=self.preco_venda)
 
     @property
@@ -118,11 +124,28 @@ class PrecoProdutoCanal(models.Model):
         if not self.usar_calculo_automatico and self.preco_venda_manual: return self.preco_venda_manual
         return self.produto.calcular_preco_venda(self.canal, self.frete_especifico)
 
+    @property
+    def preco_promocao(self):
+        if not self.usar_calculo_automatico and self.preco_promocao_manual: return self.preco_promocao_manual
+        return self.produto.calcular_preco_promocao(self.canal, self.frete_especifico)
+
+    @property
+    def preco_minimo(self):
+        if not self.usar_calculo_automatico and self.preco_minimo_manual: return self.preco_minimo_manual
+        return self.produto.calcular_preco_minimo(self.canal, self.frete_especifico)
+
+    @property
+    def desconto_maximo_percentual(self):
+        if self.preco_venda <= 0: return Decimal('0.00')
+        return ((self.preco_venda - self.preco_minimo) / self.preco_venda * Decimal('100')).quantize(Decimal('0.01'))
+
     def salvar_historico(self, usuario=None, motivo=''):
         HistoricoPreco.objects.create(
             produto=self.produto, canal=self.canal,
             custo=self.produto.custo,
             preco_venda=self.preco_venda,
+            preco_promocao=self.preco_promocao,
+            preco_minimo=self.preco_minimo,
             frete_aplicado=self.frete_aplicado,
             taxa_extra=self.canal.obter_taxa_extra(self.preco_venda),
             usuario=usuario, motivo=motivo
@@ -138,6 +161,8 @@ class HistoricoPreco(models.Model):
     canal = models.ForeignKey(CanalVenda, on_delete=models.SET_NULL, null=True)
     custo = models.DecimalField(max_digits=10, decimal_places=2)
     preco_venda = models.DecimalField(max_digits=10, decimal_places=2)
+    preco_promocao = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    preco_minimo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     frete_aplicado = models.DecimalField(max_digits=10, decimal_places=2)
     taxa_extra = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
     data_registro = models.DateTimeField(auto_now_add=True)
