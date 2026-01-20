@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     'canais_vendas',
     'produtos',
     'tabela_frete',
+    'controle_producao',
 ]
 
 MIDDLEWARE = [

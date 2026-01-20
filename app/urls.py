@@ -13,5 +13,6 @@ urlpatterns = [
     path('', include('produtos.urls')),
     path('grupos/', include('grupo_vendas.urls')),
     path('canais/', include('canais_vendas.urls')),
-    path('fretes/', include('tabela_frete.urls')),
+    path('tabelas-frete/', include('tabela_frete.urls')),
+    path('pcp/', include('controle_producao.urls')),
 ]

@@ -5,6 +5,38 @@
 {% block page_title %}Ficha Técnica{% endblock %}
 
 {% block content %}
+<style>
+    .autocomplete-suggestions {
+        position: absolute;
+        border: 1px solid #d4d4d4;
+        border-bottom: none;
+        border-top: none;
+        z-index: 1050;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #fff;
+        max-height: 200px;
+        overflow-y: auto;
+        border-radius: 0 0 4px 4px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .autocomplete-suggestions div {
+        padding: 8px 10px;
+        cursor: pointer;
+        background-color: #fff; 
+        border-bottom: 1px solid #d4d4d4;
+        font-size: 0.875rem;
+    }
+    .autocomplete-suggestions div:hover {
+        background-color: #e9e9e9;
+    }
+    .autocomplete-wrapper {
+        position: relative;
+        display: block;
+        width: 100%;
+    }
+</style>
 <div class="row">
     <!-- Resumo do Produto em linha horizontal no topo para economizar espaço lateral -->
     <div class="col-12 mb-3">
@@ -31,7 +63,8 @@
             <div class="card-body">
                 <div class="alert alert-info py-2 small mb-3">
                     <i class="bi bi-info-circle"></i>
-                    Cadastre os itens (Materia Prima, Terceirizados e Embalagem). Custo = <strong>(Qtd × Unitário × Mult)</strong>.
+                    Cadastre os itens (Materia Prima, Terceirizados e Embalagem). 
+                    <br>Use o campo <strong>Descrição</strong> para buscar itens cadastrados no PCP.
                 </div>
 
                 <form method="post" id="form-ficha">
@@ -64,8 +97,10 @@
                                                value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm" style="width: 100%;"
-                                               value="{{ form.descricao.value|default_if_none:'' }}" required>
+                                        <div class="autocomplete-wrapper">
+                                            <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                                   value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
+                                        </div>
                                     </td>
                                     <td>
                                         <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
@@ -139,8 +174,10 @@
                                                value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm" style="width: 100%;"
-                                               value="{{ form.descricao.value|default_if_none:'' }}" required>
+                                        <div class="autocomplete-wrapper">
+                                            <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                                   value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
+                                        </div>
                                     </td>
                                     <td>
                                         <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
@@ -214,8 +251,10 @@
                                                value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm" style="width: 100%;"
-                                               value="{{ form.descricao.value|default_if_none:'' }}" required>
+                                        <div class="autocomplete-wrapper">
+                                            <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                                   value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
+                                        </div>
                                     </td>
                                     <td>
                                         <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
@@ -289,7 +328,9 @@
                 <input type="text" name="form-__prefix__-codigo" class="form-control form-control-sm" required>
             </td>
             <td>
-                <input type="text" name="form-__prefix__-descricao" class="form-control form-control-sm" style="width: 100%;" required>
+                <div class="autocomplete-wrapper">
+                    <input type="text" name="form-__prefix__-descricao" class="form-control form-control-sm desc-input" style="width: 100%;" autocomplete="off" required>
+                </div>
             </td>
             <td>
                 <select name="form-__prefix__-unidade" class="form-select form-select-sm px-1">
@@ -328,6 +369,76 @@ document.addEventListener('DOMContentLoaded', function() {
     const emptyRowTemplate = document.getElementById('empty-row-template').innerHTML;
     const custoTotalGeralDisplay = document.getElementById('custo-total-geral');
     const resumoCustoTotalDisplay = document.getElementById('resumo-custo-total');
+
+    // --- Autocomplete Logic ---
+    function setupAutocomplete(input) {
+        let currentFocus;
+        
+        input.addEventListener('input', function(e) {
+            const val = this.value;
+            closeAllLists();
+            if (!val || val.length < 2) return false;
+            
+            currentFocus = -1;
+            const listDiv = document.createElement("div");
+            listDiv.setAttribute("id", this.id + "autocomplete-list");
+            listDiv.setAttribute("class", "autocomplete-suggestions");
+            this.parentNode.appendChild(listDiv);
+
+            // Fetch from API
+            fetch(`{% url 'buscar_componente_api' %}?term=${encodeURIComponent(val)}`)
+                .then(response => response.json())
+                .then(data => {
+                    listDiv.innerHTML = ""; // Clear
+                    if (data.length === 0) {
+                        closeAllLists();
+                        return;
+                    }
+                    
+                    data.forEach(item => {
+                        const itemDiv = document.createElement("div");
+                        // Bold the matching part
+                        const regex = new RegExp(`(${val})`, 'gi');
+                        const label = item.label.replace(regex, "<strong>$1</strong>");
+                        
+                        itemDiv.innerHTML = `${label} - R$ ${item.price.toFixed(4)}`;
+                        itemDiv.innerHTML += `<input type='hidden' value='${item.label}' data-price='${item.price}'>`;
+                        
+                        itemDiv.addEventListener("click", function(e) {
+                            input.value = this.getElementsByTagName("input")[0].value;
+                            const price = this.getElementsByTagName("input")[0].getAttribute('data-price');
+                            
+                            // Find the unit price input in the same row
+                            const row = input.closest('tr');
+                            const priceInput = row.querySelector('.unit-input');
+                            if (priceInput) {
+                                // Since localize off is active, we use dots
+                                priceInput.value = parseFloat(price).toFixed(3); 
+                                // Trigger calculation
+                                const event = new Event('input', { bubbles: true });
+                                priceInput.dispatchEvent(event);
+                            }
+                            closeAllLists();
+                        });
+                        listDiv.appendChild(itemDiv);
+                    });
+                })
+                .catch(err => console.error("Error fetching PCP data", err));
+        });
+
+        function closeAllLists(elmnt) {
+            const x = document.getElementsByClassName("autocomplete-suggestions");
+            for (let i = 0; i < x.length; i++) {
+                if (elmnt != x[i] && elmnt != input) {
+                    x[i].parentNode.removeChild(x[i]);
+                }
+            }
+        }
+
+        document.addEventListener("click", function (e) {
+            closeAllLists(e.target);
+        });
+    }
 
     function calcularLinha(row) {
         const qtyInput = row.querySelector('.qty-input');
@@ -449,11 +560,13 @@ document.addEventListener('DOMContentLoaded', function() {
         const qtyInput = row.querySelector('.qty-input');
         const unitInput = row.querySelector('.unit-input');
         const multInput = row.querySelector('.mult-input');
+        const descInput = row.querySelector('.desc-input'); // Autocomplete target
         const deleteCheckbox = row.querySelector('.delete-chk');
 
         if (qtyInput) qtyInput.addEventListener('input', () => calcularLinha(row));
         if (unitInput) unitInput.addEventListener('input', () => calcularLinha(row));
         if (multInput) multInput.addEventListener('input', () => calcularLinha(row));
+        if (descInput) setupAutocomplete(descInput); // Enable autocomplete
         if (deleteCheckbox) deleteCheckbox.addEventListener('change', calcularTotalGeral);
     }
 
