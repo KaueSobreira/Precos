@@ -12,6 +12,11 @@ class RegrasMatrizBulkEditView(View):
 
     def get(self, request, tabela_pk):
         tabela = get_object_or_404(TabelaFrete, pk=tabela_pk)
+        
+        # Debug
+        regras_count = RegraFreteMatriz.objects.filter(tabela=tabela).count()
+        print(f"--- DEBUG: Tabela {tabela.nome} (ID {tabela.pk}) has {regras_count} matrix rules. ---")
+
         RegraFormSet = modelformset_factory(
             RegraFreteMatriz,
             fields=['ordem', 'peso_inicio', 'peso_fim', 'preco_inicio', 'preco_fim', 'valor_frete', 'ativo'],
@@ -19,6 +24,7 @@ class RegrasMatrizBulkEditView(View):
             can_delete=True
         )
         formset = RegraFormSet(queryset=RegraFreteMatriz.objects.filter(tabela=tabela).order_by('ordem', 'peso_inicio'))
+        print(f"--- DEBUG: Formset instantiated with {len(formset)} forms. ---")
         return render(request, self.template_name, {'tabela': tabela, 'formset': formset})
 
     def post(self, request, tabela_pk):
