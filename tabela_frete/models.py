@@ -40,6 +40,13 @@ class TabelaFrete(models.Model):
         if peso is None: peso = Decimal('0.000')
         if preco is None: preco = Decimal('0.00')
         
+        # 0. Verifica Regras Especiais (Prioridade Máxima)
+        # Ex: Se peso > 30kg ou dimensões > X, usa valor fixo especial
+        regras_especiais = self.regras_especiais.filter(ativo=True).order_by('ordem')
+        for regra in regras_especiais:
+            if regra.avaliar_condicao(largura, altura, profundidade, peso):
+                return regra.valor_frete
+
         # 1. Verifica se é excedente (> 100cm em qualquer dimensão)
         # Só ativa a flag se a tabela estiver configurada para usar tabela excedente
         eh_excedente = False
@@ -96,6 +103,42 @@ class TabelaFrete(models.Model):
             if regra.avaliar_condicao(valor_teste):
                 return regra.valor_frete
         return Decimal('0.00')
+
+
+class RegraFreteEspecial(models.Model):
+    """
+    Regra Especial de Frete (Prioridade sobre as outras).
+    Define condições mínimas de dimensões ou peso para aplicar um valor fixo.
+    Se todas as condições definidas na regra forem atendidas, o frete é aplicado.
+    """
+    tabela = models.ForeignKey(TabelaFrete, related_name='regras_especiais', on_delete=models.CASCADE)
+    ordem = models.PositiveIntegerField(default=0)
+    
+    largura_min = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Largura Mín (cm)')
+    altura_min = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Altura Mín (cm)')
+    profundidade_min = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Profundidade Mín (cm)')
+    peso_min = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True, verbose_name='Peso Mín (kg)')
+    
+    valor_frete = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Valor Frete')
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Regra Especial'
+        verbose_name_plural = 'Regras Especiais'
+        ordering = ['tabela', 'ordem']
+
+    def avaliar_condicao(self, largura, altura, profundidade, peso):
+        # Se o campo estiver preenchido, a condição deve ser atendida
+        if self.largura_min is not None and largura < self.largura_min:
+            return False
+        if self.altura_min is not None and altura < self.altura_min:
+            return False
+        if self.profundidade_min is not None and profundidade < self.profundidade_min:
+            return False
+        if self.peso_min is not None and peso < self.peso_min:
+            return False
+        
+        return True
 
 
 class RegraFreteMatriz(models.Model):

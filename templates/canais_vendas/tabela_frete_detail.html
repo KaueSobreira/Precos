@@ -55,6 +55,54 @@
             </div>
         </div>
 
+        <!-- Regras Especiais -->
+        <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning-subtle d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-warning-emphasis"><i class="bi bi-star-fill"></i> Regras Especiais (Prioridade)</h5>
+                <a href="{% url 'regra_especial_create' tabela.pk %}" class="btn btn-sm btn-warning">
+                    <i class="bi bi-plus-lg"></i> Nova Regra Especial
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Ordem</th>
+                                <th>Condições (Mínimo)</th>
+                                <th class="text-end">Valor (R$)</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for regra in regras_especiais %}
+                            <tr>
+                                <td>{{ regra.ordem }}</td>
+                                <td>
+                                    <ul class="list-unstyled mb-0 small">
+                                        {% if regra.largura_min %}<li>Largura > {{ regra.largura_min }}cm</li>{% endif %}
+                                        {% if regra.altura_min %}<li>Altura > {{ regra.altura_min }}cm</li>{% endif %}
+                                        {% if regra.profundidade_min %}<li>Profundidade > {{ regra.profundidade_min }}cm</li>{% endif %}
+                                        {% if regra.peso_min %}<li>Peso > {{ regra.peso_min }}kg</li>{% endif %}
+                                    </ul>
+                                </td>
+                                <td class="text-end fw-bold text-success">{{ regra.valor_frete }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'regra_especial_update' regra.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'regra_especial_delete' regra.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Nenhuma regra especial cadastrada.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
         <!-- Regras de Frete -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">

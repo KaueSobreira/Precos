@@ -24,6 +24,11 @@ urlpatterns = [
     path('regras-simples/<int:pk>/editar/', views.RegraSimplesUpdateView.as_view(), name='regra_simples_update'),
     path('regras-simples/<int:pk>/excluir/', views.RegraSimplesDeleteView.as_view(), name='regra_simples_delete'),
 
+    # Regras Especiais
+    path('<int:tabela_pk>/regras-especiais/nova/', views.RegraEspecialCreateView.as_view(), name='regra_especial_create'),
+    path('regras-especiais/<int:pk>/editar/', views.RegraEspecialUpdateView.as_view(), name='regra_especial_update'),
+    path('regras-especiais/<int:pk>/excluir/', views.RegraEspecialDeleteView.as_view(), name='regra_especial_delete'),
+
     # Descontos
     path('<int:tabela_pk>/descontos/novo/', views.DescontoCreateView.as_view(), name='desconto_create'),
     path('descontos/<int:pk>/editar/', views.DescontoUpdateView.as_view(), name='desconto_update'),

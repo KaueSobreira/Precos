@@ -8,7 +8,7 @@ from django.http import HttpResponse
 from decimal import Decimal, InvalidOperation
 import openpyxl
 
-from .models import TabelaFrete, RegraFreteMatriz, RegraFreteSimples, DescontoNotaVendedor
+from .models import TabelaFrete, RegraFreteMatriz, RegraFreteSimples, DescontoNotaVendedor, RegraFreteEspecial
 
 # --- Tabela Frete ---
 
@@ -89,7 +89,7 @@ class RegrasMatrizImportView(View):
             return redirect('regras_matriz_import', tabela_pk=tabela.pk)
 
         try:
-            wb = openpyxl.load_workbook(arquivo, data_only=True) # data_only lê valores, não fórmulas
+            wb = openpyxl.load_workbook(arquivo, data_only=True)
             ws = wb.active
 
             regras_criadas = []
@@ -98,10 +98,9 @@ class RegrasMatrizImportView(View):
                 if substituir:
                     tabela.regras_matriz.all().delete()
 
-                # Ignorar cabeçalho (começar da linha 2)
                 rows = list(ws.rows)
                 if len(rows) > 0:
-                    data_rows = rows[1:]
+                    data_rows = rows[1:] # Ignorar cabeçalho
                 else:
                     data_rows = []
 
@@ -331,6 +330,7 @@ class TabelaFreteDetailView(DetailView):
         else:
             context['regras'] = self.object.regras_simples.all().order_by('excedente', 'inicio')
         
+        context['regras_especiais'] = self.object.regras_especiais.all().order_by('ordem')
         context['descontos'] = self.object.descontos_nota.all().order_by('nota')
         context['canais'] = self.object.canais.all()
         return context
@@ -479,6 +479,51 @@ class DescontoUpdateView(UpdateView):
 
 class DescontoDeleteView(DeleteView):
     model = DescontoNotaVendedor
+    template_name = 'tabela_frete/regra_confirm_delete.html'
+    
+    def get_success_url(self):
+        return reverse('tabela_frete_detail', kwargs={'pk': self.object.tabela.pk})
+
+# --- Regra Especial ---
+
+class RegraEspecialCreateView(CreateView):
+    model = RegraFreteEspecial
+    template_name = 'tabela_frete/regra_especial_form.html'
+    fields = ['ordem', 'largura_min', 'altura_min', 'profundidade_min', 'peso_min', 'valor_frete', 'ativo']
+
+    def dispatch(self, request, *args, **kwargs):
+        self.tabela = get_object_or_404(TabelaFrete, pk=kwargs['tabela_pk'])
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        form.instance.tabela = self.tabela
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tabela'] = self.tabela
+        context['titulo'] = "Nova Regra Especial"
+        return context
+
+    def get_success_url(self):
+        return reverse('tabela_frete_detail', kwargs={'pk': self.tabela.pk})
+
+class RegraEspecialUpdateView(UpdateView):
+    model = RegraFreteEspecial
+    template_name = 'tabela_frete/regra_especial_form.html'
+    fields = ['ordem', 'largura_min', 'altura_min', 'profundidade_min', 'peso_min', 'valor_frete', 'ativo']
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['tabela'] = self.object.tabela
+        context['titulo'] = "Editar Regra Especial"
+        return context
+
+    def get_success_url(self):
+        return reverse('tabela_frete_detail', kwargs={'pk': self.object.tabela.pk})
+
+class RegraEspecialDeleteView(DeleteView):
+    model = RegraFreteEspecial
     template_name = 'tabela_frete/regra_confirm_delete.html'
     
     def get_success_url(self):
