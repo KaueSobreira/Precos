@@ -93,35 +93,35 @@
                                 <tr class="item-row">
                                     <td>
                                         {{ form.id }}
-                                        <input type="text" name="{{ form.codigo.name }}" class="form-control form-control-sm"
+                                        <input type="text" name="{{ form.codigo.html_name }}" class="form-control form-control-sm"
                                                value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <div class="autocomplete-wrapper">
-                                            <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                            <input type="text" name="{{ form.descricao.html_name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
                                                    value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
                                         </div>
                                     </td>
                                     <td>
-                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
+                                        <select name="{{ form.unidade.html_name }}" class="form-select form-select-sm px-1">
                                             {% for value, label in form.fields.unidade.choices %}
                                                 <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
                                             {% endfor %}
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.name }}"
-                                               class="form-control form-control-sm qty-input" 
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.html_name }}"
+                                               class="form-control form-control-sm qty-input"
                                                value="{{ form.quantidade.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.name }}"
-                                               class="form-control form-control-sm unit-input" 
+                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.html_name }}"
+                                               class="form-control form-control-sm unit-input"
                                                value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.name }}"
-                                               class="form-control form-control-sm mult-input" 
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.html_name }}"
+                                               class="form-control form-control-sm mult-input"
                                                value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
                                     </td>
                                     <td class="text-end align-middle">
@@ -131,7 +131,7 @@
                                     </td>
                                     <td class="text-center align-middle">
                                         {% if form.instance.pk %}
-                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk" title="Excluir">
+                                            <input type="checkbox" name="{{ form.DELETE.html_name }}" class="form-check-input delete-chk" title="Excluir">
                                         {% else %}
                                             <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
                                         {% endif %}
@@ -170,35 +170,35 @@
                                 <tr class="item-row">
                                     <td>
                                         {{ form.id }}
-                                        <input type="text" name="{{ form.codigo.name }}" class="form-control form-control-sm"
+                                        <input type="text" name="{{ form.codigo.html_name }}" class="form-control form-control-sm"
                                                value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <div class="autocomplete-wrapper">
-                                            <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                            <input type="text" name="{{ form.descricao.html_name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
                                                    value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
                                         </div>
                                     </td>
                                     <td>
-                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
+                                        <select name="{{ form.unidade.html_name }}" class="form-select form-select-sm px-1">
                                             {% for value, label in form.fields.unidade.choices %}
                                                 <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
                                             {% endfor %}
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.name }}"
-                                               class="form-control form-control-sm qty-input" 
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.html_name }}"
+                                               class="form-control form-control-sm qty-input"
                                                value="{{ form.quantidade.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.name }}"
-                                               class="form-control form-control-sm unit-input" 
+                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.html_name }}"
+                                               class="form-control form-control-sm unit-input"
                                                value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.name }}"
-                                               class="form-control form-control-sm mult-input" 
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.html_name }}"
+                                               class="form-control form-control-sm mult-input"
                                                value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
                                     </td>
                                     <td class="text-end align-middle">
@@ -208,7 +208,7 @@
                                     </td>
                                     <td class="text-center align-middle">
                                         {% if form.instance.pk %}
-                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk">
+                                            <input type="checkbox" name="{{ form.DELETE.html_name }}" class="form-check-input delete-chk">
                                         {% else %}
                                             <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
                                         {% endif %}
@@ -247,35 +247,35 @@
                                 <tr class="item-row">
                                     <td>
                                         {{ form.id }}
-                                        <input type="text" name="{{ form.codigo.name }}" class="form-control form-control-sm"
+                                        <input type="text" name="{{ form.codigo.html_name }}" class="form-control form-control-sm"
                                                value="{{ form.codigo.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
                                         <div class="autocomplete-wrapper">
-                                            <input type="text" name="{{ form.descricao.name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                            <input type="text" name="{{ form.descricao.html_name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
                                                    value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
                                         </div>
                                     </td>
                                     <td>
-                                        <select name="{{ form.unidade.name }}" class="form-select form-select-sm px-1">
+                                        <select name="{{ form.unidade.html_name }}" class="form-select form-select-sm px-1">
                                             {% for value, label in form.fields.unidade.choices %}
                                                 <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
                                             {% endfor %}
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.name }}"
-                                               class="form-control form-control-sm qty-input" 
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.html_name }}"
+                                               class="form-control form-control-sm qty-input"
                                                value="{{ form.quantidade.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.name }}"
-                                               class="form-control form-control-sm unit-input" 
+                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.html_name }}"
+                                               class="form-control form-control-sm unit-input"
                                                value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
                                     </td>
                                     <td>
-                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.name }}"
-                                               class="form-control form-control-sm mult-input" 
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.html_name }}"
+                                               class="form-control form-control-sm mult-input"
                                                value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
                                     </td>
                                     <td class="text-end align-middle">
@@ -285,7 +285,7 @@
                                     </td>
                                     <td class="text-center align-middle">
                                         {% if form.instance.pk %}
-                                            <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input delete-chk">
+                                            <input type="checkbox" name="{{ form.DELETE.html_name }}" class="form-check-input delete-chk">
                                         {% else %}
                                             <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
                                         {% endif %}
@@ -325,6 +325,7 @@
     <tbody id="empty-row-template">
         <tr class="item-row">
             <td>
+                <input type="hidden" name="form-__prefix__-id" value="">
                 <input type="text" name="form-__prefix__-codigo" class="form-control form-control-sm" required>
             </td>
             <td>
@@ -511,14 +512,17 @@ document.addEventListener('DOMContentLoaded', function() {
             row.querySelectorAll('input, select').forEach(input => {
                 if (input.name) {
                     // Substitui o índice no name e id: prefix-INDEX-field
-                    const regex = new RegExp(`${prefix}-\d+-`);
-                    input.name = input.name.replace(regex, `${prefix}-${i}-`);
-                    input.id = input.id.replace(regex, `${prefix}-${i}-`);
+                    const regex = new RegExp(`${prefix}-\\d+-`);
+                    if (regex.test(input.name)) {
+                        input.name = input.name.replace(regex, `${prefix}-${i}-`);
+                        input.id = input.id.replace(regex, `${prefix}-${i}-`);
+                    }
                 }
             });
             i++;
         });
         totalFormsInput.value = i;
+        console.log(`Updated ${prefix} total forms to ${i}`);
     }
 
     // Adicionar Nova Linha
