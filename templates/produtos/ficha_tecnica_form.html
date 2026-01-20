@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}Ficha Técnica - {{ produto.sku }}{% endblock %}
 {% block page_title %}Ficha Técnica{% endblock %}
@@ -20,6 +21,7 @@
 
                 <form method="post" id="form-ficha">
                     {% csrf_token %}
+                    {% localize off %}
                     
                     <!-- MATERIA PRIMA -->
                     <h5 class="mt-4 text-primary border-bottom pb-2">1. Custo Matéria Prima</h5>
@@ -277,6 +279,7 @@
                             </div>
                         </div>
                     </div>
+                    {% endlocalize %}
                 </form>
             </div>
         </div>
