@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load l10n %}
 
 {% block title %}{% if object %}Editar{% else %}Novo{% endif %} Produto{% endblock %}
 {% block page_title %}{% if object %}Editar{% else %}Novo{% endif %} Produto{% endblock %}
@@ -11,6 +12,7 @@
     <div class="card-body">
         <form method="post">
             {% csrf_token %}
+            {% localize off %}
 
             {% if form.errors %}
             <div class="alert alert-danger">
@@ -32,7 +34,7 @@
                     <div class="mb-3">
                         <label for="id_titulo" class="form-label">Título Principal *</label>
                         <input type="text" name="titulo" class="form-control" id="id_titulo"
-                               value="{% if object %}{{ object.titulo }}{% else %}{{ form.titulo.value|default:'' }}{% endif %}" required>
+                               value="{{ form.titulo.value|default_if_none:'' }}" required>
                     </div>
                 </div>
                 <div class="col-md-4">
@@ -40,7 +42,7 @@
                         <label for="id_ativo" class="form-label">Status</label>
                         <div class="form-check form-switch mt-2">
                             <input type="checkbox" name="ativo" class="form-check-input" id="id_ativo"
-                                   {% if object %}{% if object.ativo %}checked{% endif %}{% else %}checked{% endif %}>
+                                   {% if form.ativo.value %}checked{% endif %}>
                             <label class="form-check-label" for="id_ativo">Ativo</label>
                         </div>
                     </div>
@@ -52,14 +54,14 @@
                     <div class="mb-3">
                         <label for="id_sku" class="form-label">SKU *</label>
                         <input type="text" name="sku" class="form-control" id="id_sku"
-                               value="{% if object %}{{ object.sku }}{% else %}{{ form.sku.value|default:'' }}{% endif %}" required>
+                               value="{{ form.sku.value|default_if_none:'' }}" required>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="mb-3">
                         <label for="id_ean" class="form-label">EAN</label>
                         <input type="text" name="ean" class="form-control" id="id_ean"
-                               value="{% if object %}{{ object.ean }}{% else %}{{ form.ean.value|default:'' }}{% endif %}">
+                               value="{{ form.ean.value|default_if_none:'' }}">
                     </div>
                 </div>
             </div>
@@ -72,28 +74,28 @@
                     <div class="mb-3">
                         <label for="id_largura" class="form-label">Largura (cm) *</label>
                         <input type="number" step="0.01" name="largura" class="form-control" id="id_largura"
-                               value="{% if object %}{{ object.largura }}{% else %}{{ form.largura.value|default:'' }}{% endif %}" required>
+                               value="{{ form.largura.value|default_if_none:'' }}" required>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label for="id_altura" class="form-label">Altura (cm) *</label>
                         <input type="number" step="0.01" name="altura" class="form-control" id="id_altura"
-                               value="{% if object %}{{ object.altura }}{% else %}{{ form.altura.value|default:'' }}{% endif %}" required>
+                               value="{{ form.altura.value|default_if_none:'' }}" required>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label for="id_profundidade" class="form-label">Profundidade (cm) *</label>
                         <input type="number" step="0.01" name="profundidade" class="form-control" id="id_profundidade"
-                               value="{% if object %}{{ object.profundidade }}{% else %}{{ form.profundidade.value|default:'' }}{% endif %}" required>
+                               value="{{ form.profundidade.value|default_if_none:'' }}" required>
                     </div>
                 </div>
                 <div class="col-md-3">
                     <div class="mb-3">
                         <label for="id_peso_fisico" class="form-label">Peso Físico (kg) *</label>
                         <input type="number" step="0.001" name="peso_fisico" class="form-control" id="id_peso_fisico"
-                               value="{% if object %}{{ object.peso_fisico }}{% else %}{{ form.peso_fisico.value|default:'' }}{% endif %}" required>
+                               value="{{ form.peso_fisico.value|default_if_none:'' }}" required>
                     </div>
                 </div>
             </div>
@@ -126,6 +128,7 @@
                 <a href="{% url 'produto_list' %}" class="btn btn-outline-secondary">Cancelar</a>
                 {% endif %}
             </div>
+            {% endlocalize %}
         </form>
     </div>
 </div>
