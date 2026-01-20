@@ -67,6 +67,7 @@ class TabelaFreteDetailView(DetailView):
             context['regras'] = self.object.regras_simples.all().order_by('inicio')
         
         context['descontos'] = self.object.descontos_nota.all().order_by('nota')
+        context['canais'] = self.object.canais.all()
         return context
 
 class TabelaFreteCreateView(CreateView):

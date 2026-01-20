@@ -48,27 +48,27 @@
                             {% endif %}
                             <tr class="form-row">
                                 <td>
-                                    <input type="number" name="{{ form.prefix }}-ordem" value="{{ form.ordem.value|default:0 }}" class="form-control form-control-sm">
+                                    <input type="number" name="{{ form.prefix }}-ordem" value="{{ form.ordem.value|default_if_none:0 }}" class="form-control form-control-sm">
                                     {% if form.ordem.errors %}<div class="text-danger small">{{ form.ordem.errors.0 }}</div>{% endif %}
                                 </td>
                                 <td>
-                                    <input type="number" step="0.001" name="{{ form.prefix }}-peso_inicio" value="{{ form.peso_inicio.value|stringformat:'s'|default:'' }}" class="form-control form-control-sm">
+                                    <input type="number" step="0.001" name="{{ form.prefix }}-peso_inicio" value="{{ form.peso_inicio.value|default_if_none:'' }}" class="form-control form-control-sm">
                                     {% if form.peso_inicio.errors %}<div class="text-danger small">{{ form.peso_inicio.errors.0 }}</div>{% endif %}
                                 </td>
                                 <td>
-                                    <input type="number" step="0.001" name="{{ form.prefix }}-peso_fim" value="{{ form.peso_fim.value|stringformat:'s'|default:'' }}" class="form-control form-control-sm">
+                                    <input type="number" step="0.001" name="{{ form.prefix }}-peso_fim" value="{{ form.peso_fim.value|default_if_none:'' }}" class="form-control form-control-sm">
                                     {% if form.peso_fim.errors %}<div class="text-danger small">{{ form.peso_fim.errors.0 }}</div>{% endif %}
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" name="{{ form.prefix }}-preco_inicio" value="{{ form.preco_inicio.value|stringformat:'s'|default:'' }}" class="form-control form-control-sm">
+                                    <input type="number" step="0.01" name="{{ form.prefix }}-preco_inicio" value="{{ form.preco_inicio.value|default_if_none:'' }}" class="form-control form-control-sm">
                                     {% if form.preco_inicio.errors %}<div class="text-danger small">{{ form.preco_inicio.errors.0 }}</div>{% endif %}
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" name="{{ form.prefix }}-preco_fim" value="{{ form.preco_fim.value|stringformat:'s'|default:'' }}" class="form-control form-control-sm">
+                                    <input type="number" step="0.01" name="{{ form.prefix }}-preco_fim" value="{{ form.preco_fim.value|default_if_none:'' }}" class="form-control form-control-sm">
                                     {% if form.preco_fim.errors %}<div class="text-danger small">{{ form.preco_fim.errors.0 }}</div>{% endif %}
                                 </td>
                                 <td>
-                                    <input type="number" step="0.01" name="{{ form.prefix }}-valor_frete" value="{{ form.valor_frete.value|stringformat:'s'|default:'' }}" class="form-control form-control-sm" required>
+                                    <input type="number" step="0.01" name="{{ form.prefix }}-valor_frete" value="{{ form.valor_frete.value|default_if_none:'' }}" class="form-control form-control-sm" required>
                                     {% if form.valor_frete.errors %}<div class="text-danger small">{{ form.valor_frete.errors.0 }}</div>{% endif %}
                                 </td>
                                 <td class="text-center">

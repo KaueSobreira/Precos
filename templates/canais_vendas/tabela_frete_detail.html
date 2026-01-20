@@ -146,13 +146,13 @@
             </div>
         </div>
         {% endif %}
-    </div>
 
+        <!-- Canais que usam esta tabela -->
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0">Canais que usam esta tabela</h5>
             </div>
-            <div class="card-body p-0">
+            <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
                 <table class="table table-hover mb-0">
                     <thead>
                         <tr>
@@ -177,15 +177,15 @@
                 </table>
             </div>
         </div>
-    </div>
+    </div> <!-- Fim col-md-8 -->
 
     <div class="col-md-4">
-        <div class="card bg-light">
+        <div class="card bg-light mb-4">
             <div class="card-body">
-                <h6>Informações</h6>
-                <p class="text-muted small">
-                    Criado em: {{ tabela.criado_em|date:"d/m/Y H:i" }}<br>
-                    Atualizado em: {{ tabela.atualizado_em|date:"d/m/Y H:i" }}
+                <h6>Informações do Registro</h6>
+                <p class="text-muted small mb-0">
+                    <strong>Criado em:</strong> {{ tabela.criado_em|date:"d/m/Y H:i" }}<br>
+                    <strong>Atualizado em:</strong> {{ tabela.atualizado_em|date:"d/m/Y H:i" }}
                 </p>
             </div>
         </div>
