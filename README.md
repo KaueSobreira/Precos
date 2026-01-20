@@ -390,24 +390,86 @@ Precos/
 
 ---
 
-## Considerações de Performance
+## Sistema de Cache de Preços
 
-### Cálculos em Tempo Real
+### Como Funciona
 
-Atualmente, os preços são calculados como `@property` (em tempo real):
-- `preco_venda`, `preco_promocao`, `preco_minimo`
+Os preços são **calculados e salvos no banco de dados** para garantir performance em listagens com muitos produtos. Os campos calculados são:
 
-**Vantagem:** Sempre reflete dados atualizados
-**Desvantagem:** Pode ficar lento com muitos produtos/canais
+| Campo | Descrição |
+|-------|-----------|
+| `preco_venda_calculado` | Preço de venda calculado |
+| `preco_promocao_calculado` | Preço promocional calculado |
+| `preco_minimo_calculado` | Preço mínimo calculado |
+| `frete_calculado` | Frete aplicado |
+| `custo_calculado` | Custo do produto |
+| `taxa_calculada` | Taxa extra aplicada |
+| `calculado_em` | Data/hora do último cálculo |
 
-### Recomendações para Escala
+### Recálculo Automático (Signals)
 
-Para grandes volumes, considere:
+O sistema **recalcula automaticamente** os preços quando:
 
-1. **Cache de Preços:** Salvar preços calculados no banco
-2. **Atualização em Lote:** Recalcular via comando/task assíncrona
-3. **Cache Redis:** Para consultas frequentes
-4. **Índices:** Garantir índices em campos de busca (sku, canal)
+| Evento | Preços Afetados |
+|--------|-----------------|
+| Tabela de frete alterada | Todos os canais que usam a tabela |
+| Regra de frete alterada/excluída | Todos os canais da tabela |
+| Tabela de taxa alterada | Todos os canais que usam a tabela |
+| Canal de venda alterado | Todos os preços do canal |
+| Grupo de canais alterado | Canais que herdam do grupo |
+| Produto alterado (peso/dimensões) | Todos os preços do produto |
+| Ficha técnica alterada | Todos os preços do produto |
+
+Antes de recalcular, o sistema **salva automaticamente o histórico** com os preços antigos.
+
+### Recálculo Manual (Comando)
+
+```bash
+# Recalcular todos os preços
+python manage.py recalcular_precos
+
+# Recalcular apenas um produto
+python manage.py recalcular_precos --produto SKU123
+
+# Recalcular apenas um canal
+python manage.py recalcular_precos --canal "Mercado Livre Full"
+
+# Sem salvar histórico (migração inicial)
+python manage.py recalcular_precos --sem-historico
+
+# Modo dry-run (apenas mostra o que seria feito)
+python manage.py recalcular_precos --dry-run
+```
+
+### Fluxo de Dados
+
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  Alteração em:   │     │                  │     │                  │
+│  - Tabela Frete  │────▶│  Signal Dispara  │────▶│  Salva Histórico │
+│  - Canal         │     │  Recálculo       │     │  (preços antigos)│
+│  - Grupo         │     │                  │     │                  │
+│  - Produto       │     └──────────────────┘     └────────┬─────────┘
+│  - Ficha Técnica │                                       │
+└──────────────────┘                                       ▼
+                                                 ┌──────────────────┐
+                                                 │  Calcula Novos   │
+                                                 │  Preços          │
+                                                 └────────┬─────────┘
+                                                          │
+                                                          ▼
+                                                 ┌──────────────────┐
+                                                 │  Salva no Banco  │
+                                                 │  (campos _calc)  │
+                                                 └──────────────────┘
+```
+
+### Performance
+
+Com o sistema de cache:
+- **Listagens**: Leitura instantânea do banco (sem cálculos)
+- **Alterações**: Recálculo apenas dos preços afetados
+- **Histórico**: Sempre preservado antes de qualquer recálculo
 
 ---
 
