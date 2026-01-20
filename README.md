@@ -85,8 +85,26 @@ Produto
 │   ├── peso_cubico = (L × A × P) / 6000
 │   ├── peso_produto = max(peso_fisico, peso_cubico)
 │   └── custo = soma de todos itens da ficha técnica
-└── Relacionamento: 1-N com ItemFichaTecnica
+├── Relacionamento: 1-N com ItemFichaTecnica
+└── Relacionamento: 1-N com TituloProduto
 ```
+
+### Títulos de Produto
+```
+TituloProduto
+├── produto (FK → Produto pai)
+├── sku (único) - SKU específico do título
+├── titulo - Nome alternativo
+├── ean - EAN opcional diferente
+├── ativo
+└── Propriedades HERDADAS do produto pai:
+    ├── largura, altura, profundidade
+    ├── peso_fisico, peso_cubico, peso_produto
+    ├── custo (ficha técnica do pai)
+    └── preços (PrecoProdutoCanal do pai)
+```
+
+**Uso:** Permite criar múltiplos anúncios do mesmo produto em marketplaces, cada um com SKU e título próprios, mas compartilhando dimensões, peso, custo e preços.
 
 ### Ficha Técnica (BOM)
 ```

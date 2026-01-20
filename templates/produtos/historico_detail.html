@@ -12,32 +12,30 @@
         <div class="row">
             <div class="col-md-4">
                 <h6>Identificação</h6>
-                <p><strong>Produto:</strong> {{ historico.sku_produto }}</p>
-                <p><strong>Canal:</strong> {{ historico.nome_canal }}</p>
-                <p><strong>Grupo:</strong> {{ historico.nome_grupo }}</p>
+                <p><strong>Produto:</strong> {{ historico.produto.sku|default:"-" }} - {{ historico.produto.titulo|default:"(excluído)" }}</p>
+                <p><strong>Canal:</strong> {{ historico.canal.nome|default:"(excluído)" }}</p>
+                <p><strong>Grupo:</strong> {{ historico.grupo_nome|default:"-" }}</p>
                 <p><strong>Usuário:</strong> {{ historico.usuario.username|default:"-" }}</p>
-                {% if historico.motivo %}
-                <p><strong>Motivo:</strong> {{ historico.motivo }}</p>
-                {% endif %}
+                <p><strong>Motivo:</strong> {{ historico.motivo|default:"-" }}</p>
             </div>
 
             <div class="col-md-4">
                 <h6>Parâmetros (%)</h6>
-                <p><strong>Imposto:</strong> {{ historico.imposto }}%</p>
-                <p><strong>Operação:</strong> {{ historico.operacao }}%</p>
-                <p><strong>Lucro:</strong> {{ historico.lucro }}%</p>
-                <p><strong>Promoção:</strong> {{ historico.promocao_perc }}%</p>
-                <p><strong>Mínimo:</strong> {{ historico.minimo_perc }}%</p>
-                <p><strong>Ads:</strong> {{ historico.ads }}%</p>
-                <p><strong>Comissão:</strong> {{ historico.comissao }}%</p>
+                <p><strong>Imposto:</strong> {{ historico.imposto|floatformat:2|default:"-" }}%</p>
+                <p><strong>Operação:</strong> {{ historico.operacao|floatformat:2|default:"-" }}%</p>
+                <p><strong>Lucro:</strong> {{ historico.lucro|floatformat:2|default:"-" }}%</p>
+                <p><strong>Promoção:</strong> {{ historico.promocao|floatformat:2|default:"-" }}%</p>
+                <p><strong>Mínimo:</strong> {{ historico.minimo|floatformat:2|default:"-" }}%</p>
+                <p><strong>Ads:</strong> {{ historico.ads|floatformat:2|default:"-" }}%</p>
+                <p><strong>Comissão:</strong> {{ historico.comissao|floatformat:2|default:"-" }}%</p>
             </div>
 
             <div class="col-md-4">
                 <h6>Markups</h6>
-                <p><strong>Markup Frete:</strong> {{ historico.markup_frete|floatformat:6 }}</p>
-                <p><strong>Markup Venda:</strong> {{ historico.markup_venda|floatformat:6 }}</p>
-                <p><strong>Markup Promoção:</strong> {{ historico.markup_promocao|floatformat:6 }}</p>
-                <p><strong>Markup Mínimo:</strong> {{ historico.markup_minimo|floatformat:6 }}</p>
+                <p><strong>Markup Frete:</strong> {{ historico.markup_frete|floatformat:4|default:"-" }}</p>
+                <p><strong>Markup Venda:</strong> {{ historico.markup_venda|floatformat:4|default:"-" }}</p>
+                <p><strong>Markup Promoção:</strong> {{ historico.markup_promocao|floatformat:4|default:"-" }}</p>
+                <p><strong>Markup Mínimo:</strong> {{ historico.markup_minimo|floatformat:4|default:"-" }}</p>
             </div>
         </div>
 
@@ -58,32 +56,51 @@
                     <div class="col-md-2">
                         <div class="card">
                             <div class="card-body text-center">
+                                <small class="text-muted">Peso</small>
+                                <h5 class="mb-0">{{ historico.peso_produto|floatformat:3|default:"-" }} kg</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <div class="card">
+                            <div class="card-body text-center">
                                 <small class="text-muted">Frete</small>
                                 <h5 class="mb-0">R$ {{ historico.frete_aplicado|floatformat:2 }}</h5>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-2">
+                        <div class="card">
+                            <div class="card-body text-center">
+                                <small class="text-muted">Taxa Extra</small>
+                                <h5 class="mb-0">R$ {{ historico.taxa_extra|floatformat:2 }}</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row mt-3">
+                    <div class="col-md-4">
                         <div class="card border-primary">
                             <div class="card-body text-center">
                                 <small class="text-muted">Preço Venda</small>
-                                <h5 class="text-primary mb-0">R$ {{ historico.preco_venda|floatformat:2 }}</h5>
+                                <h4 class="text-primary mb-0">R$ {{ historico.preco_venda|floatformat:2 }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-4">
                         <div class="card border-warning">
                             <div class="card-body text-center">
                                 <small class="text-muted">Preço Promoção</small>
-                                <h5 class="text-warning mb-0">R$ {{ historico.preco_promocao|floatformat:2 }}</h5>
+                                <h4 class="text-warning mb-0">R$ {{ historico.preco_promocao|floatformat:2|default:"-" }}</h4>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-md-4">
                         <div class="card border-danger">
                             <div class="card-body text-center">
                                 <small class="text-muted">Preço Mínimo</small>
-                                <h5 class="text-danger mb-0">R$ {{ historico.preco_minimo|floatformat:2 }}</h5>
+                                <h4 class="text-danger mb-0">R$ {{ historico.preco_minimo|floatformat:2|default:"-" }}</h4>
                             </div>
                         </div>
                     </div>
@@ -95,6 +112,11 @@
             <a href="{% url 'historico_list' %}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
+            {% if historico.produto %}
+            <a href="{% url 'produto_detail' historico.produto.pk %}" class="btn btn-outline-primary">
+                <i class="bi bi-box"></i> Ver Produto
+            </a>
+            {% endif %}
         </div>
     </div>
 </div>

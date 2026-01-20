@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Títulos - {{ produto.sku }}{% endblock %}
+{% block page_title %}Títulos Secundários{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Resumo do Produto -->
+    <div class="col-12 mb-3">
+        <div class="card bg-light">
+            <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Produto:</strong> {{ produto.sku }} - {{ produto.titulo }}
+                </div>
+                <div>
+                    <strong>Títulos Cadastrados:</strong>
+                    <span id="total-titulos" class="badge bg-primary">{{ produto.titulos.count }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Gerenciar Títulos Secundários</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info py-2 small mb-3">
+                    <i class="bi bi-info-circle"></i>
+                    Títulos secundários permitem criar múltiplos anúncios do mesmo produto.
+                    <br>Cada título tem seu próprio SKU, mas herda <strong>dimensões, peso, custo e preços</strong> do produto principal.
+                </div>
+
+                <form method="post" id="form-titulos">
+                    {% csrf_token %}
+                    {{ formset.management_form }}
+
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover" id="tabela-titulos">
+                            <thead class="table-light">
+                                <tr class="small">
+                                    <th style="width: 150px;">SKU *</th>
+                                    <th>Título *</th>
+                                    <th style="width: 150px;">EAN</th>
+                                    <th style="width: 80px;" class="text-center">Ativo</th>
+                                    <th style="width: 50px;" class="text-center"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for form in formset %}
+                                <tr class="titulo-row">
+                                    <td>
+                                        {{ form.id }}
+                                        <input type="text" name="{{ form.sku.html_name }}"
+                                               class="form-control form-control-sm"
+                                               value="{{ form.sku.value|default_if_none:'' }}"
+                                               placeholder="SKU único" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="{{ form.titulo.html_name }}"
+                                               class="form-control form-control-sm"
+                                               value="{{ form.titulo.value|default_if_none:'' }}"
+                                               placeholder="Título do anúncio" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" name="{{ form.ean.html_name }}"
+                                               class="form-control form-control-sm"
+                                               value="{{ form.ean.value|default_if_none:'' }}"
+                                               placeholder="(opcional)">
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        <input type="checkbox" name="{{ form.ativo.html_name }}"
+                                               class="form-check-input"
+                                               {% if form.ativo.value %}checked{% endif %}>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        {% if form.instance.pk %}
+                                            <input type="checkbox" name="{{ form.DELETE.html_name }}"
+                                                   class="form-check-input delete-chk"
+                                                   title="Marcar para excluir">
+                                        {% else %}
+                                            <button type="button" class="btn btn-sm text-danger remove-row p-0">
+                                                <i class="bi bi-x-circle-fill"></i>
+                                            </button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% empty %}
+                                <tr class="empty-message">
+                                    <td colspan="5" class="text-center text-muted py-3">
+                                        Nenhum título cadastrado. Clique em "Adicionar Título" abaixo.
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="add-titulo">
+                        <i class="bi bi-plus"></i> Adicionar Título
+                    </button>
+
+                    <div class="mt-4 pt-3 border-top d-flex justify-content-between">
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Salvar
+                            </button>
+                            <a href="{% url 'produto_detail' produto.pk %}" class="btn btn-outline-secondary ms-2">
+                                Cancelar
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template para nova linha -->
+<table style="display: none;">
+    <tbody id="empty-row-template">
+        <tr class="titulo-row">
+            <td>
+                <input type="hidden" name="titulo-__prefix__-id" value="">
+                <input type="text" name="titulo-__prefix__-sku"
+                       class="form-control form-control-sm"
+                       placeholder="SKU único" required>
+            </td>
+            <td>
+                <input type="text" name="titulo-__prefix__-titulo"
+                       class="form-control form-control-sm"
+                       placeholder="Título do anúncio" required>
+            </td>
+            <td>
+                <input type="text" name="titulo-__prefix__-ean"
+                       class="form-control form-control-sm"
+                       placeholder="(opcional)">
+            </td>
+            <td class="text-center align-middle">
+                <input type="checkbox" name="titulo-__prefix__-ativo"
+                       class="form-check-input" checked>
+            </td>
+            <td class="text-center align-middle">
+                <button type="button" class="btn btn-sm text-danger remove-row p-0">
+                    <i class="bi bi-x-circle-fill"></i>
+                </button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emptyRowTemplate = document.getElementById('empty-row-template').innerHTML;
+    const tableBody = document.querySelector('#tabela-titulos tbody');
+    const totalFormsInput = document.getElementById('id_titulo-TOTAL_FORMS');
+
+    // Remover mensagem de vazio se houver
+    function removeEmptyMessage() {
+        const emptyMsg = tableBody.querySelector('.empty-message');
+        if (emptyMsg) emptyMsg.remove();
+    }
+
+    // Atualizar total de forms
+    function updateTotalForms() {
+        const rows = tableBody.querySelectorAll('tr.titulo-row');
+        let i = 0;
+        rows.forEach(row => {
+            row.querySelectorAll('input, select').forEach(input => {
+                if (input.name) {
+                    const regex = /titulo-\d+-/;
+                    if (regex.test(input.name)) {
+                        input.name = input.name.replace(regex, `titulo-${i}-`);
+                        if (input.id) {
+                            input.id = input.id.replace(regex, `titulo-${i}-`);
+                        }
+                    }
+                }
+            });
+            i++;
+        });
+        totalFormsInput.value = i;
+    }
+
+    // Adicionar nova linha
+    document.getElementById('add-titulo').addEventListener('click', function() {
+        removeEmptyMessage();
+        const index = parseInt(totalFormsInput.value);
+        const newRowHtml = emptyRowTemplate.replace(/__prefix__/g, index);
+
+        const tempDiv = document.createElement('tbody');
+        tempDiv.innerHTML = newRowHtml;
+        const newRow = tempDiv.firstElementChild;
+
+        tableBody.appendChild(newRow);
+        updateTotalForms();
+
+        // Foco no primeiro campo
+        newRow.querySelector('input[type="text"]').focus();
+    });
+
+    // Remover linha (delegação de eventos)
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-row')) {
+            const row = e.target.closest('tr');
+            row.remove();
+            updateTotalForms();
+        }
+    });
+
+    // Destacar linhas marcadas para exclusão
+    document.querySelectorAll('.delete-chk').forEach(chk => {
+        chk.addEventListener('change', function() {
+            const row = this.closest('tr');
+            if (this.checked) {
+                row.classList.add('table-danger');
+                row.querySelectorAll('input:not([type="checkbox"])').forEach(input => {
+                    input.classList.add('text-decoration-line-through');
+                });
+            } else {
+                row.classList.remove('table-danger');
+                row.querySelectorAll('input').forEach(input => {
+                    input.classList.remove('text-decoration-line-through');
+                });
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

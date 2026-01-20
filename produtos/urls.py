@@ -15,6 +15,9 @@ urlpatterns = [
     # Ficha Técnica
     path('produtos/<int:produto_pk>/ficha/', views.ficha_tecnica_edit, name='ficha_tecnica_edit'),
 
+    # Títulos Secundários
+    path('produtos/<int:produto_pk>/titulos/', views.titulos_edit, name='titulos_edit'),
+
     # Preços por Canal
     path('precos/', views.PrecoListView.as_view(), name='preco_list'),
     path('precos/<int:pk>/editar/', views.preco_edit, name='preco_edit'),

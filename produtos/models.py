@@ -74,6 +74,113 @@ class Produto(models.Model):
     def calcular_preco_minimo(self, canal, frete=None):
         return self._calcular_preco_iterativo(canal, canal.markup_minimo, frete_fixo=frete)
 
+
+class TituloProduto(models.Model):
+    """
+    Títulos alternativos de um produto.
+    Cada título herda todas as propriedades do produto pai (dimensões, peso, custo, preços).
+    Útil para anúncios diferentes do mesmo produto em marketplaces.
+    """
+    produto = models.ForeignKey(Produto, related_name='titulos', on_delete=models.CASCADE)
+    sku = models.CharField(max_length=50, unique=True, verbose_name='SKU do Título')
+    titulo = models.CharField(max_length=255, verbose_name='Título')
+    ean = models.CharField(max_length=20, blank=True, verbose_name='EAN')
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Título de Produto'
+        verbose_name_plural = 'Títulos de Produtos'
+        ordering = ['produto', 'titulo']
+
+    def __str__(self):
+        return f"{self.sku} - {self.titulo}"
+
+    # ========================================
+    # Propriedades herdadas do produto pai
+    # ========================================
+
+    @property
+    def produto_pai(self):
+        """Retorna o produto pai."""
+        return self.produto
+
+    @property
+    def sku_pai(self):
+        """SKU do produto pai."""
+        return self.produto.sku
+
+    @property
+    def titulo_pai(self):
+        """Título do produto pai."""
+        return self.produto.titulo
+
+    @property
+    def largura(self):
+        """Largura herdada do produto pai."""
+        return self.produto.largura
+
+    @property
+    def altura(self):
+        """Altura herdada do produto pai."""
+        return self.produto.altura
+
+    @property
+    def profundidade(self):
+        """Profundidade herdada do produto pai."""
+        return self.produto.profundidade
+
+    @property
+    def peso_fisico(self):
+        """Peso físico herdado do produto pai."""
+        return self.produto.peso_fisico
+
+    @property
+    def peso_cubico(self):
+        """Peso cúbico calculado a partir das dimensões do pai."""
+        return self.produto.peso_cubico
+
+    @property
+    def peso_produto(self):
+        """Peso do produto (maior entre físico e cúbico)."""
+        return self.produto.peso_produto
+
+    @property
+    def custo(self):
+        """Custo herdado do produto pai (soma da ficha técnica)."""
+        return self.produto.custo
+
+    @property
+    def itens_ficha(self):
+        """Itens da ficha técnica do produto pai."""
+        return self.produto.itens_ficha
+
+    @property
+    def precos_canais(self):
+        """Preços por canal do produto pai."""
+        return self.produto.precos_canais
+
+    def get_preco_canal(self, canal):
+        """Retorna o preço do produto pai para um canal específico."""
+        try:
+            return self.produto.precos_canais.get(canal=canal, ativo=True)
+        except PrecoProdutoCanal.DoesNotExist:
+            return None
+
+    def calcular_preco_venda(self, canal, frete=None):
+        """Calcula preço de venda usando o produto pai."""
+        return self.produto.calcular_preco_venda(canal, frete)
+
+    def calcular_preco_promocao(self, canal, frete=None):
+        """Calcula preço promocional usando o produto pai."""
+        return self.produto.calcular_preco_promocao(canal, frete)
+
+    def calcular_preco_minimo(self, canal, frete=None):
+        """Calcula preço mínimo usando o produto pai."""
+        return self.produto.calcular_preco_minimo(canal, frete)
+
+
 class ItemFichaTecnica(models.Model):
     UNIDADE_CHOICES = [
         ('UN', 'Unidade'), ('PC', 'Peça'), ('CJ', 'Conjunto'),
@@ -191,18 +298,42 @@ class PrecoProdutoCanal(models.Model):
         return ((self.preco_venda - self.preco_minimo) / self.preco_venda * Decimal('100')).quantize(Decimal('0.01'))
 
     def salvar_historico(self, usuario=None, motivo=''):
-        """Salva um snapshot imutável dos preços atuais."""
+        """Salva um snapshot imutável dos preços atuais com todos os parâmetros."""
+        canal = self.canal
+
         HistoricoPreco.objects.create(
+            # Identificação
             produto=self.produto,
-            canal=self.canal,
+            canal=canal,
+            grupo_nome=canal.grupo.nome if canal.grupo else '',
+            usuario=usuario,
+            motivo=motivo,
+
+            # Valores do Produto
             custo=self.custo,
+            peso_produto=self.produto.peso_produto,
+
+            # Preços Calculados
             preco_venda=self.preco_venda,
             preco_promocao=self.preco_promocao,
             preco_minimo=self.preco_minimo,
             frete_aplicado=self.frete_aplicado,
             taxa_extra=self.taxa_extra,
-            usuario=usuario,
-            motivo=motivo
+
+            # Parâmetros (%) - snapshot do canal
+            imposto=canal.imposto_efetivo,
+            operacao=canal.operacao_efetivo,
+            lucro=canal.lucro_efetivo,
+            promocao=canal.promocao_efetivo,
+            minimo=canal.minimo_efetivo,
+            ads=canal.ads_efetivo,
+            comissao=canal.comissao_efetivo,
+
+            # Markups
+            markup_frete=canal.markup_frete,
+            markup_venda=canal.markup_venda,
+            markup_promocao=canal.markup_promocao,
+            markup_minimo=canal.markup_minimo,
         )
 
     def recalcular_precos(self, salvar_historico=True, usuario=None, motivo='Recálculo automático'):
@@ -283,14 +414,48 @@ class PrecoProdutoCanal(models.Model):
         super().save(*args, **kwargs)
 
 class HistoricoPreco(models.Model):
-    produto = models.ForeignKey(Produto, on_delete=models.SET_NULL, null=True)
+    """
+    Registro imutável de preços.
+    Captura snapshot completo: preços, parâmetros e markups no momento da alteração.
+    """
+    # Identificação
+    produto = models.ForeignKey(Produto, on_delete=models.SET_NULL, null=True, related_name='historicos')
     canal = models.ForeignKey(CanalVenda, on_delete=models.SET_NULL, null=True)
+    grupo_nome = models.CharField(max_length=100, blank=True, verbose_name='Grupo')
+    data_registro = models.DateTimeField(auto_now_add=True)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    motivo = models.TextField(blank=True)
+
+    # Valores do Produto
     custo = models.DecimalField(max_digits=10, decimal_places=2)
+    peso_produto = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+
+    # Preços Calculados
     preco_venda = models.DecimalField(max_digits=10, decimal_places=2)
     preco_promocao = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     preco_minimo = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     frete_aplicado = models.DecimalField(max_digits=10, decimal_places=2)
     taxa_extra = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
-    data_registro = models.DateTimeField(auto_now_add=True)
-    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
-    motivo = models.TextField(blank=True)
+
+    # Parâmetros (%) - snapshot do canal no momento
+    imposto = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    operacao = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    lucro = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    promocao = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    minimo = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    ads = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+    comissao = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
+
+    # Markups - snapshot calculado no momento
+    markup_frete = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    markup_venda = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    markup_promocao = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+    markup_minimo = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Histórico de Preço'
+        verbose_name_plural = 'Históricos de Preços'
+        ordering = ['-data_registro']
+
+    def __str__(self):
+        return f"{self.produto} - {self.canal} - {self.data_registro:%d/%m/%Y %H:%M}"

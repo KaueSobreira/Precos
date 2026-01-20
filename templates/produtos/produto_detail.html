@@ -41,6 +41,51 @@
             </div>
         </div>
 
+        <!-- Títulos Secundários -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Títulos Secundários <span class="badge bg-secondary">{{ titulos|length }}</span></h5>
+                <a href="{% url 'titulos_edit' produto.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-pencil"></i> Gerenciar Títulos
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>SKU</th>
+                            <th>Título</th>
+                            <th>EAN</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for titulo in titulos %}
+                        <tr>
+                            <td><code>{{ titulo.sku }}</code></td>
+                            <td>{{ titulo.titulo }}</td>
+                            <td>{{ titulo.ean|default:"-" }}</td>
+                            <td>
+                                {% if titulo.ativo %}
+                                <span class="badge bg-success">Ativo</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Inativo</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="text-center text-muted py-3">
+                                Nenhum título secundário cadastrado.
+                                <a href="{% url 'titulos_edit' produto.pk %}">Adicionar agora</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <!-- Ficha Técnica -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">

@@ -8,7 +8,9 @@ from django.db.models import Count
 from django.forms import modelformset_factory
 from django.db import transaction
 
-from .models import Produto, ItemFichaTecnica, PrecoProdutoCanal, HistoricoPreco
+from django.db.models import Q
+
+from .models import Produto, TituloProduto, ItemFichaTecnica, PrecoProdutoCanal, HistoricoPreco
 from canais_vendas.models import CanalVenda
 from grupo_vendas.models import GrupoCanais
 
@@ -36,7 +38,13 @@ class ProdutoListView(ListView):
         queryset = Produto.objects.all()
         search = self.request.GET.get('search')
         if search:
-            queryset = queryset.filter(sku__icontains=search) | queryset.filter(titulo__icontains=search)
+            # Pesquisa no produto principal e nos títulos alternativos
+            queryset = queryset.filter(
+                Q(sku__icontains=search) |
+                Q(titulo__icontains=search) |
+                Q(titulos__sku__icontains=search) |
+                Q(titulos__titulo__icontains=search)
+            ).distinct()
         return queryset.order_by('-criado_em')
 
 
@@ -49,6 +57,7 @@ class ProdutoDetailView(DetailView):
         context = super().get_context_data(**kwargs)
         context['itens_ficha'] = self.object.itens_ficha.all()
         context['precos_canais'] = self.object.precos_canais.filter(ativo=True).select_related('canal', 'canal__grupo')
+        context['titulos'] = self.object.titulos.filter(ativo=True)
         return context
 
 
@@ -87,6 +96,47 @@ class ProdutoDeleteView(DeleteView):
     def form_valid(self, form):
         messages.success(self.request, 'Produto excluído com sucesso!')
         return super().form_valid(form)
+
+
+def titulos_edit(request, produto_pk):
+    """Edição dos títulos secundários de um produto"""
+    produto = get_object_or_404(Produto, pk=produto_pk)
+
+    TituloFormSet = modelformset_factory(
+        TituloProduto,
+        fields=['sku', 'titulo', 'ean', 'ativo'],
+        extra=0,
+        can_delete=True
+    )
+
+    if request.method == 'POST':
+        formset = TituloFormSet(request.POST, queryset=produto.titulos.all(), prefix='titulo')
+
+        if formset.is_valid():
+            with transaction.atomic():
+                instances = formset.save(commit=False)
+                for instance in instances:
+                    instance.produto = produto
+                    instance.save()
+                for obj in formset.deleted_objects:
+                    obj.delete()
+
+            messages.success(request, 'Títulos atualizados com sucesso!')
+            return redirect('produto_detail', pk=produto.pk)
+        else:
+            for form in formset:
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        messages.error(request, f"Título - {field}: {error}")
+            for error in formset.non_form_errors():
+                messages.error(request, error)
+    else:
+        formset = TituloFormSet(queryset=produto.titulos.all(), prefix='titulo')
+
+    return render(request, 'produtos/titulos_form.html', {
+        'produto': produto,
+        'formset': formset,
+    })
 
 
 def ficha_tecnica_edit(request, produto_pk):
@@ -168,7 +218,13 @@ class PrecoListView(ListView):
         canal = self.request.GET.get('canal')
 
         if produto:
-            queryset = queryset.filter(produto__sku__icontains=produto)
+            # Pesquisa no produto principal e nos títulos alternativos
+            queryset = queryset.filter(
+                Q(produto__sku__icontains=produto) |
+                Q(produto__titulo__icontains=produto) |
+                Q(produto__titulos__sku__icontains=produto) |
+                Q(produto__titulos__titulo__icontains=produto)
+            ).distinct()
         if grupo:
             queryset = queryset.filter(canal__grupo_id=grupo)
         if canal:
