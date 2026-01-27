@@ -181,27 +181,34 @@ class RegraFreteMatriz(models.Model):
         if self.peso_inicio is None: self.peso_inicio = Decimal('0.000')
         if self.preco_inicio is None: self.preco_inicio = Decimal('0.00')
         if self.score_inicio is None: self.score_inicio = 0
+        # _fim = 0 semanticamente é "sem limite" (NULL/∞)
+        if self.peso_fim is not None and self.peso_fim == Decimal('0'):
+            self.peso_fim = None
+        if self.preco_fim is not None and self.preco_fim == Decimal('0'):
+            self.preco_fim = None
+        if self.score_fim is not None and self.score_fim == 0:
+            self.score_fim = None
         super().save(*args, **kwargs)
 
     def avaliar_condicao(self, peso, preco=None, score=None):
         p_ini = self.peso_inicio or Decimal('0.000')
-        
-        # Avalia Peso
+
+        # Avalia Peso (_fim=0 ou None = sem limite)
         if peso < p_ini: return False
-        if self.peso_fim is not None and peso >= self.peso_fim: return False
+        if self.peso_fim and peso >= self.peso_fim: return False
 
         # Avalia Preço (se tabela for Matriz Preço)
         if preco is not None:
             pr_ini = self.preco_inicio or Decimal('0.00')
             if preco < pr_ini: return False
-            if self.preco_fim is not None and preco >= self.preco_fim: return False
+            if self.preco_fim and preco >= self.preco_fim: return False
 
         # Avalia Score (se tabela for Matriz Score)
         if score is not None:
             s_ini = self.score_inicio or 0
             if score < s_ini: return False
             # Score é inclusivo no final (<=) pois é inteiro discreto
-            if self.score_fim is not None and score > self.score_fim: return False
+            if self.score_fim and score > self.score_fim: return False
 
         return True
 
@@ -238,19 +245,22 @@ class RegraFreteSimples(models.Model):
 
     def save(self, *args, **kwargs):
         if self.inicio is None: self.inicio = Decimal('0.000')
+        # fim = 0 semanticamente é "sem limite" (NULL/∞)
+        if self.fim is not None and self.fim == Decimal('0'):
+            self.fim = None
         super().save(*args, **kwargs)
 
     def avaliar_condicao(self, valor):
         # Lógica [Inicio, Fim)
         ini = self.inicio or Decimal('0.000')
-        
+
         if valor < ini:
             return False
-        
-        if self.fim is not None:
-            if valor >= self.fim:
-                return False
-        
+
+        # fim=0 ou None = sem limite
+        if self.fim and valor >= self.fim:
+            return False
+
         return True
 
 
