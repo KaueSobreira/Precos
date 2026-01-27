@@ -7,6 +7,7 @@ from django.urls import reverse_lazy, reverse
 from django.db.models import Count
 from django.forms import modelformset_factory
 from django.db import transaction
+from decimal import Decimal
 
 from django.db.models import Q
 
@@ -258,9 +259,11 @@ def preco_edit(request, pk):
             val = request.POST.get(field)
             if val and val.strip():
                 try:
-                    setattr(preco, field, Decimal(val.replace(',', '.')))
-                except:
-                    pass # Ignora valores inválidos
+                    # Remove % se houver e substitui vírgula
+                    clean_val = val.replace('%', '').replace(',', '.')
+                    setattr(preco, field, Decimal(clean_val))
+                except Exception as e:
+                    messages.warning(request, f"Valor inválido para {field.capitalize()}: {val}")
             else:
                 setattr(preco, field, None)
 

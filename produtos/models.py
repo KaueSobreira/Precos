@@ -619,12 +619,12 @@ class PrecoProdutoCanal(models.Model):
         return self
 
     @transaction.atomic
-    def save(self, *args, recalculando=False, **kwargs):
+    def save(self, *args, usuario=None, motivo='', recalculando=False, **kwargs):
         # Se é um update normal (não recálculo), salva histórico
         if self.pk and not recalculando:
             # Verifica se já tem preços calculados para salvar no histórico
             if self.preco_venda_calculado is not None:
-                self.salvar_historico(motivo='Alteração manual')
+                self.salvar_historico(usuario=usuario, motivo=motivo or 'Alteração manual')
 
         # Se é criação ou alteração manual, recalcula os preços
         if not recalculando:
