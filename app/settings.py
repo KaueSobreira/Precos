@@ -30,6 +30,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     # Apps do sistema
+    'rest_framework'
+
+    'api',
     'grupo_vendas',
     'canais_vendas',
     'produtos',
