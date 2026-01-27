@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Produto{% endblock %}
+{% block page_title %}Excluir Produto{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">Confirmar Exclusão</h5>
+    </div>
+    <div class="card-body">
+        <p>Tem certeza que deseja excluir o produto <strong>{{ object.sku }} - {{ object.titulo }}</strong>?</p>
+        <p class="text-danger">Esta ação não pode ser desfeita e irá excluir também todos os preços e históricos associados.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Sim, Excluir
+            </button>
+            <a href="{% url 'produto_detail' object.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

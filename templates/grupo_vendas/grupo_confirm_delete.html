@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Grupo{% endblock %}
+{% block page_title %}Excluir Grupo{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">Confirmar Exclusão</h5>
+    </div>
+    <div class="card-body">
+        {% if is_protected %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i>
+            O grupo <strong>{{ grupo.nome }}</strong> é o grupo padrão (ECOSSISTEMA) e não pode ser excluído.
+        </div>
+        <a href="{% url 'grupo_list' %}" class="btn btn-outline-secondary">Voltar</a>
+        {% else %}
+        <p>Tem certeza que deseja excluir o grupo <strong>{{ object.nome }}</strong>?</p>
+        <p class="text-danger">Esta ação não pode ser desfeita.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Sim, Excluir
+            </button>
+            <a href="{% url 'grupo_detail' object.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

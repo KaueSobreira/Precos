@@ -1,0 +1,287 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ tabela.nome }} - Tabelas de Frete{% endblock %}
+{% block page_title %}Detalhes da Tabela de Frete{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">{{ tabela.nome }}</h5>
+                <div>
+                    <a href="{% url 'tabela_frete_update' tabela.pk %}" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-pencil"></i> Editar Tabela
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Tipo:</strong> {{ tabela.get_tipo_display }}</p>
+                        <p><strong>Descrição:</strong> {{ tabela.descricao|default:"-" }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Status:</strong> 
+                            {% if tabela.ativo %}
+                            <span class="badge bg-success">Ativo</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Inativo</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Desconto por Nota:</strong> 
+                            {% if tabela.suporta_nota_vendedor %}
+                            <span class="text-success"><i class="bi bi-check-circle"></i> Sim</span>
+                            {% else %}
+                            <span class="text-muted"><i class="bi bi-x-circle"></i> Não</span>
+                            {% endif %}
+                        </p>
+                        <p><strong>Taxa Fixa Adicional:</strong>
+                            {% if tabela.adicionar_taxa_fixa %}
+                                R$ {{ tabela.valor_taxa_fixa }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </p>
+                        <p><strong>Tabela Diferenciada > 1m:</strong>
+                            {% if tabela.usa_tabela_excedente %}
+                                <span class="text-primary"><i class="bi bi-check-circle"></i> Sim</span>
+                            {% else %}
+                                <span class="text-muted"><i class="bi bi-x-circle"></i> Não</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Regras Especiais -->
+        <div class="card mb-4 border-warning">
+            <div class="card-header bg-warning-subtle d-flex justify-content-between align-items-center">
+                <h5 class="mb-0 text-warning-emphasis"><i class="bi bi-star-fill"></i> Regras Especiais (Prioridade)</h5>
+                <a href="{% url 'regra_especial_create' tabela.pk %}" class="btn btn-sm btn-warning">
+                    <i class="bi bi-plus-lg"></i> Nova Regra Especial
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
+                            <tr>
+                                <th>Ordem</th>
+                                <th>Condições (Mínimo)</th>
+                                <th class="text-end">Valor (R$)</th>
+                                <th class="text-end">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for regra in regras_especiais %}
+                            <tr>
+                                <td>{{ regra.ordem }}</td>
+                                <td>
+                                    <ul class="list-unstyled mb-0 small">
+                                        {% if regra.largura_min %}<li>Largura > {{ regra.largura_min }}cm</li>{% endif %}
+                                        {% if regra.altura_min %}<li>Altura > {{ regra.altura_min }}cm</li>{% endif %}
+                                        {% if regra.profundidade_min %}<li>Profundidade > {{ regra.profundidade_min }}cm</li>{% endif %}
+                                        {% if regra.peso_min %}<li>Peso > {{ regra.peso_min }}kg</li>{% endif %}
+                                    </ul>
+                                </td>
+                                <td class="text-end fw-bold text-success">{{ regra.valor_frete }}</td>
+                                <td class="text-end">
+                                    <a href="{% url 'regra_especial_update' regra.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'regra_especial_delete' regra.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">Nenhuma regra especial cadastrada.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Regras de Frete -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Regras de Frete</h5>
+                {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
+                    <div>
+                        <a href="{% url 'regras_matriz_import' tabela.pk %}" class="btn btn-sm btn-outline-dark me-1">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Importar CSV
+                        </a>
+                        <a href="{% url 'regras_matriz_bulk_edit' tabela.pk %}" class="btn btn-sm btn-success">
+                            <i class="bi bi-table"></i> Edição em Massa
+                        </a>
+                    </div>
+                {% else %}
+                    <div>
+                        <a href="{% url 'regras_simples_import' tabela.pk %}" class="btn btn-sm btn-outline-dark me-1">
+                            <i class="bi bi-file-earmark-spreadsheet"></i> Importar XLSX
+                        </a>
+                        <a href="{% url 'regra_simples_create' tabela.pk %}" class="btn btn-sm btn-primary">
+                            <i class="bi bi-plus-lg"></i> Nova Regra Simples
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
+                                <th>Ordem</th>
+                                <th>Peso (kg)</th>
+                                
+                                {% if tabela.tipo == 'matriz_score' %}
+                                    <th>Score</th>
+                                {% else %}
+                                    <th>Preço (R$)</th>
+                                {% endif %}
+
+                            {% else %}
+                                <th>Faixa ({{ tabela.get_tipo_display }})</th>
+                            {% endif %}
+                            
+                            {% if tabela.usa_tabela_excedente %}
+                                <th class="text-center">Excedente (>1m)</th>
+                            {% endif %}
+
+                            <th class="text-end">Valor (R$)</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for regra in regras %}
+                        <tr>
+                            {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
+                                <td>{{ regra.ordem }}</td>
+                                <td>{{ regra.peso_inicio|default:"0" }} - {{ regra.peso_fim|default:"∞" }}</td>
+                                
+                                {% if tabela.tipo == 'matriz_score' %}
+                                    <td>{{ regra.score_inicio|default:"0" }} - {{ regra.score_fim|default:"∞" }}</td>
+                                {% else %}
+                                    <td>{{ regra.preco_inicio|default:"0" }} - {{ regra.preco_fim|default:"∞" }}</td>
+                                {% endif %}
+
+                            {% else %}
+                                <td>{{ regra.inicio|default:"0" }} - {{ regra.fim|default:"∞" }}</td>
+                            {% endif %}
+
+                            {% if tabela.usa_tabela_excedente %}
+                                <td class="text-center">
+                                    {% if regra.excedente %}
+                                        <span class="badge bg-warning text-dark">Sim</span>
+                                    {% else %}
+                                        <span class="badge bg-light text-dark border">Não</span>
+                                    {% endif %}
+                                </td>
+                            {% endif %}
+
+                            <td class="text-end">{{ regra.valor_frete }}</td>
+                            <td class="text-end">
+                                {% if tabela.tipo == 'matriz' or tabela.tipo == 'matriz_score' %}
+                                    <a href="{% url 'regra_matriz_update' regra.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'regra_matriz_delete' regra.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                {% else %}
+                                    <a href="{% url 'regra_simples_update' regra.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                    <a href="{% url 'regra_simples_delete' regra.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted py-3">Nenhuma regra cadastrada.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Descontos por Nota -->
+        {% if tabela.suporta_nota_vendedor %}
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Descontos por Nota</h5>
+                <a href="{% url 'desconto_create' tabela.pk %}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-plus-lg"></i> Novo Desconto
+                </a>
+            </div>
+            <div class="card-body p-0">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Nota</th>
+                            <th>Desconto (%)</th>
+                            <th class="text-end">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for desconto in descontos %}
+                        <tr>
+                            <td>{{ desconto.get_nota_display }}</td>
+                            <td>{{ desconto.percentual_desconto }}%</td>
+                            <td class="text-end">
+                                <a href="{% url 'desconto_update' desconto.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                                <a href="{% url 'desconto_delete' desconto.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted py-3">Nenhum desconto configurado.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Canais que usam esta tabela -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Canais que usam esta tabela</h5>
+            </div>
+            <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Canal</th>
+                            <th>Grupo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for canal in canais %}
+                        <tr>
+                            <td><a href="{% url 'canal_detail' canal.pk %}">{{ canal.nome }}</a></td>
+                            <td>{{ canal.grupo.nome }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="2" class="text-center text-muted py-3">
+                                Nenhum canal usando esta tabela.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div> <!-- Fim col-md-8 -->
+
+    <div class="col-md-4">
+        <div class="card bg-light mb-4">
+            <div class="card-body">
+                <h6>Informações do Registro</h6>
+                <p class="text-muted small mb-0">
+                    <strong>Criado em:</strong> {{ tabela.criado_em|date:"d/m/Y H:i" }}<br>
+                    <strong>Atualizado em:</strong> {{ tabela.atualizado_em|date:"d/m/Y H:i" }}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block title %}Excluir Tabela de Frete{% endblock %}
+{% block page_title %}Excluir Tabela de Frete{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header bg-danger text-white">
+        <h5 class="mb-0">Confirmar Exclusão</h5>
+    </div>
+    <div class="card-body">
+        <p>Tem certeza que deseja excluir a tabela de frete <strong>{{ object.nome }}</strong>?</p>
+        <p class="text-danger">Esta ação não pode ser desfeita.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">
+                <i class="bi bi-trash"></i> Sim, Excluir
+            </button>
+            <a href="{% url 'tabela_frete_detail' object.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Regras de Frete - {{ tabela.nome }}{% endblock %}
+{% block page_title %}Regras de Frete{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Editar Regras: {{ tabela.nome }} ({{ tabela.get_tipo_display }})</h5>
+    </div>
+    <div class="card-body">
+        <div class="alert alert-info">
+            <i class="bi bi-info-circle"></i>
+            <strong>Como funciona:</strong> As regras são avaliadas em ordem. A primeira regra que satisfazer a condição será aplicada.
+            Sempre termine com uma regra "SENÃO" como fallback.
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+            {{ formset.management_form }}
+
+            <div class="table-responsive">
+                <table class="table" id="regras-table">
+                    <thead>
+                        <tr>
+                            <th width="80">Ordem</th>
+                            <th width="150">Condição</th>
+                            <th width="150">Operador</th>
+                            <th width="150">Valor Limite</th>
+                            <th width="150">Valor Frete (R$)</th>
+                            <th width="80">Ativo</th>
+                            <th width="80">Excluir</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for form in formset %}
+                        <tr>
+                            <td>
+                                {{ form.id }}
+                                <input type="number" name="{{ form.ordem.name }}" class="form-control form-control-sm"
+                                       value="{{ form.ordem.value|default:'0' }}">
+                            </td>
+                            <td>
+                                <select name="{{ form.tipo_condicao.name }}" class="form-select form-select-sm">
+                                    <option value="if" {% if form.tipo_condicao.value == 'if' %}selected{% endif %}>SE</option>
+                                    <option value="elseif" {% if form.tipo_condicao.value == 'elseif' %}selected{% endif %}>SENÃO SE</option>
+                                    <option value="else" {% if form.tipo_condicao.value == 'else' %}selected{% endif %}>SENÃO</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select name="{{ form.operador.name }}" class="form-select form-select-sm">
+                                    <option value="lte" {% if form.operador.value == 'lte' %}selected{% endif %}>menor ou igual</option>
+                                    <option value="lt" {% if form.operador.value == 'lt' %}selected{% endif %}>menor que</option>
+                                    <option value="gte" {% if form.operador.value == 'gte' %}selected{% endif %}>maior ou igual</option>
+                                    <option value="gt" {% if form.operador.value == 'gt' %}selected{% endif %}>maior que</option>
+                                    <option value="eq" {% if form.operador.value == 'eq' %}selected{% endif %}>igual</option>
+                                </select>
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" name="{{ form.valor_limite.name }}"
+                                       class="form-control form-control-sm" value="{{ form.valor_limite.value|default:'' }}">
+                            </td>
+                            <td>
+                                <input type="number" step="0.01" name="{{ form.valor_frete.name }}"
+                                       class="form-control form-control-sm" value="{{ form.valor_frete.value|default:'' }}" required>
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" name="{{ form.ativo.name }}" class="form-check-input"
+                                       {% if form.ativo.value %}checked{% endif %}>
+                            </td>
+                            <td class="text-center">
+                                {% if form.instance.pk %}
+                                <input type="checkbox" name="{{ form.DELETE.name }}" class="form-check-input">
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Salvar Regras
+                </button>
+                <a href="{% url 'tabela_frete_detail' tabela.pk %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

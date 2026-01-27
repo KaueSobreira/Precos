@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+{% load l10n %}
+
+{% block title %}{% if object %}Editar{% else %}Novo{% endif %} Canal{% endblock %}
+{% block page_title %}{% if object %}Editar{% else %}Novo{% endif %} Canal{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{% if object %}Editar Canal: {{ object.nome }}{% else %}Cadastrar Novo Canal{% endif %}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            {% localize off %}
+
+            {% if form.errors %}
+            <div class="alert alert-danger">
+                <ul class="mb-0">
+                    {% for field in form %}
+                        {% for error in field.errors %}
+                        <li><strong>{{ field.label }}:</strong> {{ error }}</li>
+                        {% endfor %}
+                    {% endfor %}
+                    {% for error in form.non_field_errors %}
+                    <li>{{ error }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_nome" class="form-label">Nome *</label>
+                        <input type="text" name="nome" class="form-control" id="id_nome"
+                               value="{{ form.nome.value|default:'' }}" required>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_grupo" class="form-label">Grupo *</label>
+                        {{ form.grupo }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" name="ativo" class="form-check-input" id="id_ativo"
+                                   {% if form.ativo.value %}checked{% endif %}>
+                            <label class="form-check-label" for="id_ativo">Ativo</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_descricao" class="form-label">Descrição</label>
+                <textarea name="descricao" class="form-control" id="id_descricao" rows="2">{{ form.descricao.value|default:'' }}</textarea>
+            </div>
+
+            <hr>
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input type="checkbox" name="herdar_grupo" class="form-check-input" id="id_herdar_grupo"
+                           {% if form.herdar_grupo.value %}checked{% endif %}>
+                    <label class="form-check-label" for="id_herdar_grupo">
+                        <strong>Herdar valores do grupo</strong>
+                    </label>
+                </div>
+                <small class="text-muted">Se marcado, usa os percentuais definidos no grupo.</small>
+            </div>
+
+            <h6>Parâmetros do Canal (%)</h6>
+            <small class="text-muted">Só são usados se "Herdar do grupo" estiver desmarcado.</small>
+
+            <div class="row mt-2">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_imposto" class="form-label">Imposto (%)</label>
+                        <input type="number" step="0.01" name="imposto" class="form-control" id="id_imposto"
+                               value="{{ form.imposto.value|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_operacao" class="form-label">Operação (%)</label>
+                        <input type="number" step="0.01" name="operacao" class="form-control" id="id_operacao"
+                               value="{{ form.operacao.value|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_lucro" class="form-label">Lucro (%)</label>
+                        <input type="number" step="0.01" name="lucro" class="form-control" id="id_lucro"
+                               value="{{ form.lucro.value|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_promocao" class="form-label">Promoção (%)</label>
+                        <input type="number" step="0.01" name="promocao" class="form-control" id="id_promocao"
+                               value="{{ form.promocao.value|default:'' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_minimo" class="form-label">Mínimo (%)</label>
+                        <input type="number" step="0.01" name="minimo" class="form-control" id="id_minimo"
+                               value="{{ form.minimo.value|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_ads" class="form-label">Ads (%)</label>
+                        <input type="number" step="0.01" name="ads" class="form-control" id="id_ads"
+                               value="{{ form.ads.value|default:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_comissao" class="form-label">Comissão (%)</label>
+                        <input type="number" step="0.01" name="comissao" class="form-control" id="id_comissao"
+                               value="{{ form.comissao.value|default:'' }}">
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+            <h6>Configuração de Frete</h6>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_tipo_frete" class="form-label">Tipo de Frete *</label>
+                        {{ form.tipo_frete }}
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_frete_fixo" class="form-label">Frete Fixo (R$)</label>
+                        <input type="number" step="0.01" name="frete_fixo" class="form-control" id="id_frete_fixo"
+                               value="{{ form.frete_fixo.value|default:'0' }}">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_tabela_frete" class="form-label">Tabela de Frete</label>
+                        {{ form.tabela_frete }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_nota_vendedor" class="form-label">Nota do Vendedor (Rating)</label>
+                        {{ form.nota_vendedor }}
+                        <small class="text-muted d-block">Para descontos percentuais.</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_score" class="form-label">Score do Canal (0-100)</label>
+                        <input type="number" name="score" class="form-control" id="id_score"
+                               value="{{ form.score.value|default:'0' }}">
+                        <small class="text-muted d-block">Para matrizes de Peso x Score.</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="mb-3">
+                        <label for="id_tabela_taxa" class="form-label">Tabela de Taxas (Taxa Fixa Venda)</label>
+                        {{ form.tabela_taxa }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Salvar
+                </button>
+                <a href="{% url 'canal_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+            {% endlocalize %}
+        </form>
+    </div>
+</div>
+{% endblock %}

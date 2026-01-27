@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if object %}Editar{% else %}Nova{% endif %} Tabela de Frete{% endblock %}
+{% block page_title %}{% if object %}Editar{% else %}Nova{% endif %} Tabela de Frete{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">{% if object %}Editar: {{ object.nome }}{% else %}Nova Tabela de Frete{% endif %}</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="id_nome" class="form-label">Nome *</label>
+                        <input type="text" name="nome" class="form-control" id="id_nome"
+                               value="{{ form.nome.value|default:'' }}" required>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_tipo" class="form-label">Tipo *</label>
+                        {{ form.tipo }}
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label class="form-label">Status</label>
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" name="ativo" class="form-check-input" id="id_ativo"
+                                   {% if form.ativo.value %}checked{% endif %}>
+                            <label class="form-check-label" for="id_ativo">Ativo</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="id_descricao" class="form-label">Descrição</label>
+                <textarea name="descricao" class="form-control" id="id_descricao" rows="2">{{ form.descricao.value|default:'' }}</textarea>
+            </div>
+
+            <div class="row">
+                <div class="col-md-12">
+                    <h6 class="border-bottom pb-2 mb-3">Configurações Adicionais</h6>
+                </div>
+                
+                <div class="col-md-4">
+                    <div class="form-check form-switch mb-2">
+                        <input type="checkbox" name="suporta_nota_vendedor" class="form-check-input" id="id_nota"
+                               {% if form.suporta_nota_vendedor.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_nota">Suporta Desconto por Nota (Score)</label>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-2">
+                        <input type="checkbox" name="usa_tabela_excedente" class="form-check-input" id="id_excedente"
+                               {% if form.usa_tabela_excedente.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_excedente">Tabela Diferenciada > 1m</label>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="form-check form-switch mb-2">
+                        <input type="checkbox" name="adicionar_taxa_fixa" class="form-check-input" id="id_taxa"
+                               {% if form.adicionar_taxa_fixa.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_taxa">Adicionar Taxa Fixa</label>
+                    </div>
+                    <div class="mt-2">
+                        <input type="number" step="0.01" name="valor_taxa_fixa" class="form-control form-control-sm" placeholder="Valor Taxa (R$)"
+                               value="{{ form.valor_taxa_fixa.value|stringformat:'s'|default:'' }}">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Salvar
+                </button>
+                <a href="{% url 'tabela_frete_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

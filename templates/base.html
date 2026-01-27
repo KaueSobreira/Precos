@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Precificação{% endblock %}</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --sidebar-width: 250px;
+        }
+
+        body {
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: var(--sidebar-width);
+            height: 100vh;
+            background-color: #212529;
+            padding-top: 1rem;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            padding: 0.75rem 1rem;
+            border-radius: 0.25rem;
+            margin: 0.125rem 0.5rem;
+        }
+
+        .sidebar .nav-link:hover {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar .nav-link.active {
+            color: #fff;
+            background-color: #0d6efd;
+        }
+
+        .sidebar .nav-link i {
+            margin-right: 0.5rem;
+        }
+
+        .sidebar-header {
+            color: #fff;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-header h5 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            min-height: 100vh;
+        }
+
+        .navbar-top {
+            background-color: #fff;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .content-wrapper {
+            padding: 1.5rem;
+        }
+
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+
+        .stat-card {
+            border-left: 4px solid;
+        }
+
+        .stat-card.primary { border-left-color: #0d6efd; }
+        .stat-card.success { border-left-color: #198754; }
+        .stat-card.warning { border-left-color: #ffc107; }
+        .stat-card.danger { border-left-color: #dc3545; }
+
+        .table th {
+            font-weight: 600;
+            background-color: #f8f9fa;
+        }
+
+        .btn-action {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .badge-preco {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .section-divider {
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 1rem 1rem 0.5rem;
+            margin-top: 0.5rem;
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="sidebar-header">
+            <h5><i class="bi bi-currency-dollar"></i> Precificação</h5>
+        </div>
+
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {% if request.resolver_match.url_name == 'home' %}active{% endif %}" href="{% url 'home' %}">
+                    <i class="bi bi-house-door"></i> Dashboard
+                </a>
+            </li>
+
+            <div class="section-divider">Cadastros</div>
+
+            <li class="nav-item">
+                <a class="nav-link {% if 'produto' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'produto_list' %}">
+                    <i class="bi bi-box-seam"></i> Produtos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'grupo' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'grupo_list' %}">
+                    <i class="bi bi-diagram-3"></i> Grupos de Canais
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'canal' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'canal_list' %}">
+                    <i class="bi bi-shop"></i> Canais de Venda
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'tabela_frete' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'tabela_frete_list' %}">
+                    <i class="bi bi-truck"></i> Tabelas de Frete
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'componente_list' %}">PCP (Materiais)</a>
+            </li>
+
+            <div class="section-divider">Precificação</div>
+
+            <li class="nav-item">
+                <a class="nav-link {% if 'tabela_precos' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'tabela_precos' %}">
+                    <i class="bi bi-table"></i> Tabela de Preços
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'preco_list' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'preco_list' %}">
+                    <i class="bi bi-tag"></i> Gerenciar Preços
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {% if 'historico' in request.resolver_match.url_name %}active{% endif %}" href="{% url 'historico_list' %}">
+                    <i class="bi bi-clock-history"></i> Histórico
+                </a>
+            </li>
+
+            <div class="section-divider">Sistema</div>
+
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'admin:index' %}">
+                    <i class="bi bi-gear"></i> Admin
+                </a>
+            </li>
+            {% if user.is_authenticated %}
+            <li class="nav-item">
+                <a class="nav-link" href="{% url 'logout' %}">
+                    <i class="bi bi-box-arrow-right"></i> Sair
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Top Navbar -->
+        <nav class="navbar navbar-top navbar-expand-lg px-4 py-2">
+            <div class="container-fluid">
+                <span class="navbar-text">
+                    {% block page_title %}Dashboard{% endblock %}
+                </span>
+                <div class="ms-auto d-flex align-items-center">
+                    {% if user.is_authenticated %}
+                    <span class="text-muted me-3">
+                        <i class="bi bi-person-circle"></i> {{ user.username }}
+                    </span>
+                    {% endif %}
+                </div>
+            </div>
+        </nav>
+
+        <!-- Content -->
+        <div class="content-wrapper">
+            {% if messages %}
+            {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

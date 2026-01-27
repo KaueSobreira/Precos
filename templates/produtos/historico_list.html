@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Histórico de Preços{% endblock %}
+{% block page_title %}Histórico de Preços{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Histórico de Alterações de Preços</h5>
+    </div>
+    <div class="card-body">
+        <form method="get" class="row mb-3">
+            <div class="col-md-2">
+                <input type="text" name="produto" class="form-control" placeholder="SKU"
+                       value="{{ request.GET.produto }}">
+            </div>
+            <div class="col-md-2">
+                <input type="text" name="canal" class="form-control" placeholder="Canal"
+                       value="{{ request.GET.canal }}">
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="data_inicio" class="form-control" placeholder="Data início"
+                       value="{{ request.GET.data_inicio }}">
+            </div>
+            <div class="col-md-2">
+                <input type="date" name="data_fim" class="form-control" placeholder="Data fim"
+                       value="{{ request.GET.data_fim }}">
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search"></i> Filtrar
+                </button>
+            </div>
+        </form>
+
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead>
+                    <tr>
+                        <th>Data/Hora</th>
+                        <th>Produto</th>
+                        <th>Canal</th>
+                        <th>Grupo</th>
+                        <th class="text-end">Custo</th>
+                        <th class="text-end">Frete</th>
+                        <th class="text-end">Preço Venda</th>
+                        <th class="text-end">Preço Promo</th>
+                        <th class="text-end">Preço Mín.</th>
+                        <th>Usuário</th>
+                        <th>Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for h in historicos %}
+                    <tr>
+                        <td>{{ h.data_registro|date:"d/m/Y H:i" }}</td>
+                        <td>{{ h.sku_produto }}</td>
+                        <td>{{ h.nome_canal }}</td>
+                        <td>{{ h.nome_grupo }}</td>
+                        <td class="text-end">R$ {{ h.custo|floatformat:2 }}</td>
+                        <td class="text-end">R$ {{ h.frete_aplicado|floatformat:2 }}</td>
+                        <td class="text-end">R$ {{ h.preco_venda|floatformat:2 }}</td>
+                        <td class="text-end">R$ {{ h.preco_promocao|floatformat:2 }}</td>
+                        <td class="text-end">R$ {{ h.preco_minimo|floatformat:2 }}</td>
+                        <td>{{ h.usuario.username|default:"-" }}</td>
+                        <td>
+                            <a href="{% url 'historico_detail' h.pk %}" class="btn btn-sm btn-outline-secondary" title="Detalhes">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="11" class="text-center py-4 text-muted">
+                            Nenhum registro de histórico encontrado.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if is_paginated %}
+        <nav>
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Anterior</a>
+                </li>
+                {% endif %}
+                <li class="page-item disabled">
+                    <span class="page-link">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+                </li>
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Próxima</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,140 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar Preço{% endblock %}
+{% block page_title %}Editar Preço{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Editar Preço: {{ preco.produto.sku }} - {{ preco.canal.nome }}</h5>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>Produto</h6>
+                        <p class="mb-1"><strong>{{ preco.produto.sku }}</strong></p>
+                        <p class="mb-1">{{ preco.produto.titulo }}</p>
+                        <p class="mb-0">Custo: R$ {{ preco.produto.custo|floatformat:2 }}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card bg-light">
+                    <div class="card-body">
+                        <h6>Canal</h6>
+                        <p class="mb-1"><strong>{{ preco.canal.nome }}</strong></p>
+                        <p class="mb-1">Grupo: {{ preco.canal.grupo.nome }}</p>
+                        <p class="mb-0">Markup Venda: {{ preco.canal.markup_venda|floatformat:4 }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input type="checkbox" name="usar_calculo_automatico" class="form-check-input" id="usar_auto"
+                                   {% if preco.usar_calculo_automatico %}checked{% endif %}>
+                            <label class="form-check-label" for="usar_auto">
+                                <strong>Usar Cálculo Automático</strong>
+                            </label>
+                        </div>
+                        <small class="text-muted">Se marcado, os preços são calculados automaticamente com base nas fórmulas.</small>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="frete_especifico" class="form-label">Frete Específico (R$)</label>
+                        <input type="number" step="0.01" name="frete_especifico" class="form-control" id="frete_especifico"
+                               value="{{ preco.frete_especifico|default:'' }}">
+                        <small class="text-muted">Se preenchido, sobrescreve o frete do canal.</small>
+                    </div>
+                </div>
+
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">Valores Manuais (quando cálculo automático desativado)</div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="preco_venda_manual" class="form-label">Preço de Venda (R$)</label>
+                                <input type="number" step="0.01" name="preco_venda_manual" class="form-control"
+                                       value="{{ preco.preco_venda_manual|default:'' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="preco_promocao_manual" class="form-label">Preço Promoção (R$)</label>
+                                <input type="number" step="0.01" name="preco_promocao_manual" class="form-control"
+                                       value="{{ preco.preco_promocao_manual|default:'' }}">
+                            </div>
+                            <div class="mb-3">
+                                <label for="preco_minimo_manual" class="form-label">Preço Mínimo (R$)</label>
+                                <input type="number" step="0.01" name="preco_minimo_manual" class="form-control"
+                                       value="{{ preco.preco_minimo_manual|default:'' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label for="motivo" class="form-label">Motivo da Alteração</label>
+                <textarea name="motivo" class="form-control" id="motivo" rows="2"
+                          placeholder="Descreva o motivo da alteração (opcional)"></textarea>
+            </div>
+
+            <hr>
+
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h6>Valores Atuais (Calculados)</h6>
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Frete Aplicado</small>
+                                    <h4 class="text-primary mb-0">R$ {{ preco.frete_aplicado|floatformat:2 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-primary">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Preço Venda</small>
+                                    <h4 class="text-primary mb-0">R$ {{ preco.preco_venda|floatformat:2 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-warning">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Preço Promoção</small>
+                                    <h4 class="text-warning mb-0">R$ {{ preco.preco_promocao|floatformat:2 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card border-danger">
+                                <div class="card-body text-center">
+                                    <small class="text-muted">Preço Mínimo</small>
+                                    <h4 class="text-danger mb-0">R$ {{ preco.preco_minimo|floatformat:2 }}</h4>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-lg"></i> Salvar Alterações
+                </button>
+                <a href="{% url 'preco_list' %}" class="btn btn-outline-secondary">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

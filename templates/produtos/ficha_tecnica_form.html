@@ -1,0 +1,582 @@
+{% extends 'base.html' %}
+{% load l10n %}
+
+{% block title %}Ficha Técnica - {{ produto.sku }}{% endblock %}
+{% block page_title %}Ficha Técnica{% endblock %}
+
+{% block content %}
+<style>
+    .autocomplete-suggestions {
+        position: absolute;
+        border: 1px solid #d4d4d4;
+        border-bottom: none;
+        border-top: none;
+        z-index: 1050;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background-color: #fff;
+        max-height: 200px;
+        overflow-y: auto;
+        border-radius: 0 0 4px 4px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .autocomplete-suggestions div {
+        padding: 8px 10px;
+        cursor: pointer;
+        background-color: #fff; 
+        border-bottom: 1px solid #d4d4d4;
+        font-size: 0.875rem;
+    }
+    .autocomplete-suggestions div:hover {
+        background-color: #e9e9e9;
+    }
+    .autocomplete-wrapper {
+        position: relative;
+        display: block;
+        width: 100%;
+    }
+</style>
+<div class="row">
+    <!-- Resumo do Produto em linha horizontal no topo para economizar espaço lateral -->
+    <div class="col-12 mb-3">
+        <div class="card bg-light">
+            <div class="card-body py-2 d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>Produto:</strong> {{ produto.sku }} - {{ produto.titulo }}
+                </div>
+                <div>
+                    <strong>Custo Total:</strong> 
+                    <span id="resumo-custo-total" class="h5 mb-0 {% if produto.custo == 0 %}text-warning{% else %}text-success{% endif %}">
+                        R$ {{ produto.custo|floatformat:2 }}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Edição de Ficha Técnica</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info py-2 small mb-3">
+                    <i class="bi bi-info-circle"></i>
+                    Cadastre os itens (Materia Prima, Terceirizados e Embalagem). 
+                    <br>Use o campo <strong>Descrição</strong> para buscar itens cadastrados no PCP.
+                </div>
+
+                <form method="post" id="form-ficha">
+                    {% csrf_token %}
+                    {% localize off %}
+                    
+                    <!-- MATERIA PRIMA -->
+                    <h6 class="mt-2 text-primary border-bottom pb-1">1. Custo Matéria Prima</h6>
+                    {{ formset_mp.management_form }}
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-hover ficha-table" data-prefix="mp">
+                            <thead class="table-light">
+                                <tr class="small">
+                                    <th style="width: 120px;">Código *</th>
+                                    <th>Descrição *</th>
+                                    <th style="width: 70px;">UND</th>
+                                    <th style="width: 80px;">QTD *</th>
+                                    <th style="width: 100px;">VLR Unit. *</th>
+                                    <th style="width: 70px;" title="Multiplicador">Mult.</th>
+                                    <th style="width: 110px;" class="text-end">VLR Total</th>
+                                    <th style="width: 40px;" class="text-center"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for form in formset_mp %}
+                                <tr class="item-row">
+                                    <td>
+                                        {{ form.id }}
+                                        <input type="text" name="{{ form.codigo.html_name }}" class="form-control form-control-sm"
+                                               value="{{ form.codigo.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <div class="autocomplete-wrapper">
+                                            <input type="text" name="{{ form.descricao.html_name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                                   value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select name="{{ form.unidade.html_name }}" class="form-select form-select-sm px-1">
+                                            {% for value, label in form.fields.unidade.choices %}
+                                                <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.html_name }}"
+                                               class="form-control form-control-sm qty-input"
+                                               value="{{ form.quantidade.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.html_name }}"
+                                               class="form-control form-control-sm unit-input"
+                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.html_name }}"
+                                               class="form-control form-control-sm mult-input"
+                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
+                                    </td>
+                                    <td class="text-end align-middle">
+                                        <span class="total-display small {% if form.instance.pk %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                            R$ {{ form.instance.custo_total|default:0|floatformat:3 }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        {% if form.instance.pk %}
+                                            <input type="checkbox" name="{{ form.DELETE.html_name }}" class="form-check-input delete-chk" title="Excluir">
+                                        {% else %}
+                                            <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-xs btn-outline-primary add-item py-0" data-prefix="mp">
+                            <i class="bi bi-plus"></i> Adicionar Item
+                        </button>
+                        <div class="text-end small">
+                            Subtotal MP: <span class="subtotal-display fw-bold" id="subtotal-mp">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- TERCEIRIZADOS (Similar layout) -->
+                    <h6 class="mt-4 text-warning border-bottom pb-1">2. Custo Terceirizados</h6>
+                    {{ formset_terc.management_form }}
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-hover ficha-table" data-prefix="terc">
+                            <thead class="table-light">
+                                <tr class="small">
+                                    <th style="width: 120px;">Código *</th>
+                                    <th>Descrição *</th>
+                                    <th style="width: 70px;">UND</th>
+                                    <th style="width: 80px;">QTD *</th>
+                                    <th style="width: 100px;">VLR Unit. *</th>
+                                    <th style="width: 70px;">Mult.</th>
+                                    <th style="width: 110px;" class="text-end">VLR Total</th>
+                                    <th style="width: 40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for form in formset_terc %}
+                                <tr class="item-row">
+                                    <td>
+                                        {{ form.id }}
+                                        <input type="text" name="{{ form.codigo.html_name }}" class="form-control form-control-sm"
+                                               value="{{ form.codigo.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <div class="autocomplete-wrapper">
+                                            <input type="text" name="{{ form.descricao.html_name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                                   value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select name="{{ form.unidade.html_name }}" class="form-select form-select-sm px-1">
+                                            {% for value, label in form.fields.unidade.choices %}
+                                                <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.html_name }}"
+                                               class="form-control form-control-sm qty-input"
+                                               value="{{ form.quantidade.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.html_name }}"
+                                               class="form-control form-control-sm unit-input"
+                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.html_name }}"
+                                               class="form-control form-control-sm mult-input"
+                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
+                                    </td>
+                                    <td class="text-end align-middle">
+                                        <span class="total-display small {% if form.instance.pk %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                            R$ {{ form.instance.custo_total|default:0|floatformat:3 }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        {% if form.instance.pk %}
+                                            <input type="checkbox" name="{{ form.DELETE.html_name }}" class="form-check-input delete-chk">
+                                        {% else %}
+                                            <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-xs btn-outline-warning add-item py-0" data-prefix="terc">
+                            <i class="bi bi-plus"></i> Adicionar Item
+                        </button>
+                        <div class="text-end small">
+                            Subtotal Terc: <span class="subtotal-display fw-bold" id="subtotal-terc">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <!-- EMBALAGENS -->
+                    <h6 class="mt-4 text-info border-bottom pb-1">3. Custo Embalagens</h6>
+                    {{ formset_emb.management_form }}
+                    <div class="table-responsive mb-4">
+                        <table class="table table-sm table-hover ficha-table" data-prefix="emb">
+                            <thead class="table-light">
+                                <tr class="small">
+                                    <th style="width: 120px;">Código *</th>
+                                    <th>Descrição *</th>
+                                    <th style="width: 70px;">UND</th>
+                                    <th style="width: 80px;">QTD *</th>
+                                    <th style="width: 100px;">VLR Unit. *</th>
+                                    <th style="width: 70px;">Mult.</th>
+                                    <th style="width: 110px;" class="text-end">VLR Total</th>
+                                    <th style="width: 40px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for form in formset_emb %}
+                                <tr class="item-row">
+                                    <td>
+                                        {{ form.id }}
+                                        <input type="text" name="{{ form.codigo.html_name }}" class="form-control form-control-sm"
+                                               value="{{ form.codigo.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <div class="autocomplete-wrapper">
+                                            <input type="text" name="{{ form.descricao.html_name }}" class="form-control form-control-sm desc-input" style="width: 100%;"
+                                                   value="{{ form.descricao.value|default_if_none:'' }}" autocomplete="off" required>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <select name="{{ form.unidade.html_name }}" class="form-select form-select-sm px-1">
+                                            {% for value, label in form.fields.unidade.choices %}
+                                                <option value="{{ value }}" {% if form.unidade.value == value %}selected{% endif %}>{{ label }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.quantidade.html_name }}"
+                                               class="form-control form-control-sm qty-input"
+                                               value="{{ form.quantidade.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.001" min="0" name="{{ form.custo_unitario.html_name }}"
+                                               class="form-control form-control-sm unit-input"
+                                               value="{{ form.custo_unitario.value|default_if_none:'' }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" min="0.01" name="{{ form.multiplicador.html_name }}"
+                                               class="form-control form-control-sm mult-input"
+                                               value="{{ form.multiplicador.value|default_if_none:'1.00' }}" required>
+                                    </td>
+                                    <td class="text-end align-middle">
+                                        <span class="total-display small {% if form.instance.pk %}text-success fw-bold{% else %}text-muted{% endif %}">
+                                            R$ {{ form.instance.custo_total|default:0|floatformat:3 }}
+                                        </span>
+                                    </td>
+                                    <td class="text-center align-middle">
+                                        {% if form.instance.pk %}
+                                            <input type="checkbox" name="{{ form.DELETE.html_name }}" class="form-check-input delete-chk">
+                                        {% else %}
+                                            <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                        <button type="button" class="btn btn-xs btn-outline-info add-item py-0" data-prefix="emb">
+                            <i class="bi bi-plus"></i> Adicionar Item
+                        </button>
+                        <div class="text-end small">
+                            Subtotal Emb: <span class="subtotal-display fw-bold" id="subtotal-emb">R$ 0,00</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-3 pt-3 border-top d-flex justify-content-between align-items-center">
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Salvar Tudo
+                            </button>
+                            <a href="{% url 'produto_detail' produto.pk %}" class="btn btn-outline-secondary ms-2">Cancelar</a>
+                        </div>
+                        <div class="text-end">
+                            <h5 class="mb-0">Custo Total: <span id="custo-total-geral" class="text-success">R$ {{ produto.custo|floatformat:2 }}</span></h5>
+                        </div>
+                    </div>
+                    {% endlocalize %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Template para nova linha (escondido) -->
+<table style="display: none;">
+    <tbody id="empty-row-template">
+        <tr class="item-row">
+            <td>
+                <input type="hidden" name="form-__prefix__-id" value="">
+                <input type="text" name="form-__prefix__-codigo" class="form-control form-control-sm" required>
+            </td>
+            <td>
+                <div class="autocomplete-wrapper">
+                    <input type="text" name="form-__prefix__-descricao" class="form-control form-control-sm desc-input" style="width: 100%;" autocomplete="off" required>
+                </div>
+            </td>
+            <td>
+                <select name="form-__prefix__-unidade" class="form-select form-select-sm px-1">
+                    {% for value, label in formset_mp.empty_form.fields.unidade.choices %}
+                        <option value="{{ value }}" {% if value == 'UN' %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </td>
+            <td>
+                <input type="number" step="0.01" min="0.01" name="form-__prefix__-quantidade"
+                       class="form-control form-control-sm qty-input" required>
+            </td>
+            <td>
+                <input type="number" step="0.001" min="0" name="form-__prefix__-custo_unitario"
+                       class="form-control form-control-sm unit-input" required>
+            </td>
+            <td>
+                <input type="number" step="0.01" min="0.01" name="form-__prefix__-multiplicador"
+                       class="form-control form-control-sm mult-input" value="1.00" required>
+            </td>
+            <td class="text-end align-middle">
+                <span class="total-display small text-muted">R$ 0,000</span>
+            </td>
+            <td class="text-center align-middle">
+                <button type="button" class="btn btn-sm text-danger remove-row p-0"><i class="bi bi-x-circle-fill"></i></button>
+            </td>
+        </tr>
+    </tbody>
+</table>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const emptyRowTemplate = document.getElementById('empty-row-template').innerHTML;
+    const custoTotalGeralDisplay = document.getElementById('custo-total-geral');
+    const resumoCustoTotalDisplay = document.getElementById('resumo-custo-total');
+
+    // --- Autocomplete Logic ---
+    function setupAutocomplete(input) {
+        let currentFocus;
+        
+        input.addEventListener('input', function(e) {
+            const val = this.value;
+            closeAllLists();
+            if (!val || val.length < 2) return false;
+            
+            currentFocus = -1;
+            const listDiv = document.createElement("div");
+            listDiv.setAttribute("id", this.id + "autocomplete-list");
+            listDiv.setAttribute("class", "autocomplete-suggestions");
+            this.parentNode.appendChild(listDiv);
+
+            // Fetch from API
+            fetch(`{% url 'buscar_componente_api' %}?term=${encodeURIComponent(val)}`)
+                .then(response => response.json())
+                .then(data => {
+                    listDiv.innerHTML = ""; // Clear
+                    if (data.length === 0) {
+                        closeAllLists();
+                        return;
+                    }
+                    
+                    data.forEach(item => {
+                        const itemDiv = document.createElement("div");
+                        // Bold the matching part
+                        const regex = new RegExp(`(${val})`, 'gi');
+                        const label = item.label.replace(regex, "<strong>$1</strong>");
+                        
+                        itemDiv.innerHTML = `${label} - R$ ${item.price.toFixed(4)}`;
+                        itemDiv.innerHTML += `<input type='hidden' value='${item.label}' data-price='${item.price}'>`;
+                        
+                        itemDiv.addEventListener("click", function(e) {
+                            input.value = this.getElementsByTagName("input")[0].value;
+                            const price = this.getElementsByTagName("input")[0].getAttribute('data-price');
+                            
+                            // Find the unit price input in the same row
+                            const row = input.closest('tr');
+                            const priceInput = row.querySelector('.unit-input');
+                            if (priceInput) {
+                                // Since localize off is active, we use dots
+                                priceInput.value = parseFloat(price).toFixed(3); 
+                                // Trigger calculation
+                                const event = new Event('input', { bubbles: true });
+                                priceInput.dispatchEvent(event);
+                            }
+                            closeAllLists();
+                        });
+                        listDiv.appendChild(itemDiv);
+                    });
+                })
+                .catch(err => console.error("Error fetching PCP data", err));
+        });
+
+        function closeAllLists(elmnt) {
+            const x = document.getElementsByClassName("autocomplete-suggestions");
+            for (let i = 0; i < x.length; i++) {
+                if (elmnt != x[i] && elmnt != input) {
+                    x[i].parentNode.removeChild(x[i]);
+                }
+            }
+        }
+
+        document.addEventListener("click", function (e) {
+            closeAllLists(e.target);
+        });
+    }
+
+    function calcularLinha(row) {
+        const qtyInput = row.querySelector('.qty-input');
+        const unitInput = row.querySelector('.unit-input');
+        const multInput = row.querySelector('.mult-input');
+        const totalDisplay = row.querySelector('.total-display');
+
+        if (qtyInput && unitInput && multInput && totalDisplay) {
+            const qty = parseFloat(qtyInput.value) || 0;
+            const unit = parseFloat(unitInput.value) || 0;
+            const mult = parseFloat(multInput.value) || 1;
+            const total = qty * unit * mult;
+
+            totalDisplay.textContent = 'R$ ' + total.toFixed(3).replace('.', ',');
+            if (total > 0) {
+                totalDisplay.classList.remove('text-muted');
+                totalDisplay.classList.add('text-success');
+            } else {
+                totalDisplay.classList.add('text-muted');
+                totalDisplay.classList.remove('text-success');
+            }
+        }
+        calcularTotalGeral();
+    }
+
+    function calcularTotalGeral() {
+        let totalGeral = 0;
+        
+        // Iterar sobre todas as tabelas (mp, terc, emb)
+        document.querySelectorAll('.ficha-table').forEach(table => {
+            let subtotal = 0;
+            const prefix = table.dataset.prefix;
+            
+            table.querySelectorAll('tbody tr.item-row').forEach(row => {
+                const deleteCheckbox = row.querySelector('input.delete-chk');
+                if (deleteCheckbox && deleteCheckbox.checked) return;
+
+                const qtyInput = row.querySelector('.qty-input');
+                const unitInput = row.querySelector('.unit-input');
+                const multInput = row.querySelector('.mult-input');
+
+                const qty = parseFloat(qtyInput ? qtyInput.value : 0) || 0;
+                const unit = parseFloat(unitInput ? unitInput.value : 0) || 0;
+                const mult = parseFloat(multInput ? multInput.value : 1) || 1;
+
+                subtotal += (qty * unit * mult);
+            });
+
+            // Atualiza subtotal desta tabela
+            const subtotalDisplay = document.getElementById(`subtotal-${prefix}`);
+            if (subtotalDisplay) {
+                subtotalDisplay.textContent = 'R$ ' + subtotal.toFixed(2).replace('.', ',');
+            }
+            
+            totalGeral += subtotal;
+        });
+
+        // Atualiza total geral
+        const textoTotal = 'R$ ' + totalGeral.toFixed(2).replace('.', ',');
+        if (custoTotalGeralDisplay) custoTotalGeralDisplay.textContent = textoTotal;
+        if (resumoCustoTotalDisplay) resumoCustoTotalDisplay.textContent = textoTotal;
+    }
+
+    function updateTotalForms(prefix) {
+        const totalFormsInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+        const table = document.querySelector(`.ficha-table[data-prefix="${prefix}"]`);
+        
+        let i = 0;
+        table.querySelectorAll('tbody tr.item-row').forEach(row => {
+            row.querySelectorAll('input, select').forEach(input => {
+                if (input.name) {
+                    // Substitui o índice no name e id: prefix-INDEX-field
+                    const regex = new RegExp(`${prefix}-\\d+-`);
+                    if (regex.test(input.name)) {
+                        input.name = input.name.replace(regex, `${prefix}-${i}-`);
+                        input.id = input.id.replace(regex, `${prefix}-${i}-`);
+                    }
+                }
+            });
+            i++;
+        });
+        totalFormsInput.value = i;
+        console.log(`Updated ${prefix} total forms to ${i}`);
+    }
+
+    // Adicionar Nova Linha
+    document.querySelectorAll('.add-item').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const prefix = this.dataset.prefix;
+            const totalFormsInput = document.getElementById(`id_${prefix}-TOTAL_FORMS`);
+            const tableBody = document.querySelector(`.ficha-table[data-prefix="${prefix}"] tbody`);
+            
+            const index = parseInt(totalFormsInput.value);
+            // Substitui __prefix__ pelo índice correto e form-__prefix__ pelo prefixo correto
+            let newRowHtml = emptyRowTemplate.replace(/__prefix__/g, index);
+            newRowHtml = newRowHtml.replace(/form-/g, `${prefix}-`); // Ajusta o prefixo do formset
+
+            const tempDiv = document.createElement('tbody');
+            tempDiv.innerHTML = newRowHtml;
+            const newRow = tempDiv.firstElementChild;
+
+            tableBody.appendChild(newRow);
+            updateTotalForms(prefix);
+            attachEventsToRow(newRow);
+        });
+    });
+
+    // Remover Linha
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-row')) {
+            const row = e.target.closest('tr');
+            const table = row.closest('table');
+            const prefix = table.dataset.prefix;
+            
+            row.remove();
+            updateTotalForms(prefix);
+            calcularTotalGeral();
+        }
+    });
+
+    function attachEventsToRow(row) {
+        const qtyInput = row.querySelector('.qty-input');
+        const unitInput = row.querySelector('.unit-input');
+        const multInput = row.querySelector('.mult-input');
+        const descInput = row.querySelector('.desc-input'); // Autocomplete target
+        const deleteCheckbox = row.querySelector('.delete-chk');
+
+        if (qtyInput) qtyInput.addEventListener('input', () => calcularLinha(row));
+        if (unitInput) unitInput.addEventListener('input', () => calcularLinha(row));
+        if (multInput) multInput.addEventListener('input', () => calcularLinha(row));
+        if (descInput) setupAutocomplete(descInput); // Enable autocomplete
+        if (deleteCheckbox) deleteCheckbox.addEventListener('change', calcularTotalGeral);
+    }
+
+    // Inicializar
+    document.querySelectorAll('.item-row').forEach(row => attachEventsToRow(row));
+    calcularTotalGeral(); // Calcular inicial
+});
+</script>
+{% endblock %}
