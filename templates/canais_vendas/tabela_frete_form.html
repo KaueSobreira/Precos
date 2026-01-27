@@ -60,6 +60,12 @@
                                {% if form.usa_tabela_excedente.value %}checked{% endif %}>
                         <label class="form-check-label" for="id_excedente">Tabela Diferenciada > 1m</label>
                     </div>
+
+                    <div class="form-check form-switch mb-2">
+                        <input type="checkbox" name="usar_preco_promocao" class="form-check-input" id="id_promocao"
+                               {% if form.usar_preco_promocao.value %}checked{% endif %}>
+                        <label class="form-check-label" for="id_promocao">Usar Preço Promoção para Frete</label>
+                    </div>
                 </div>
 
                 <div class="col-md-4">
