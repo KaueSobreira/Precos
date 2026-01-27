@@ -56,7 +56,73 @@
                     </div>
                 </div>
 
-                <div class="col-md-6">
+                <div class="col-md-12 mb-4">
+                    <div class="card">
+                        <div class="card-header bg-light">
+                            <h6 class="mb-0">Parâmetros Específicos (Override)</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info py-2 small mb-3">
+                                <i class="bi bi-info-circle"></i> 
+                                Preencha apenas se desejar sobrescrever os valores do Canal/Grupo para este produto.
+                                O valor em cinza (placeholder) é o atual herdado.
+                            </div>
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Imposto (%)</label>
+                                        <input type="number" step="0.01" name="imposto" class="form-control" 
+                                               value="{{ preco.imposto|default:'' }}" placeholder="{{ preco.canal.imposto_efetivo|floatformat:2 }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Operação (%)</label>
+                                        <input type="number" step="0.01" name="operacao" class="form-control" 
+                                               value="{{ preco.operacao|default:'' }}" placeholder="{{ preco.canal.operacao_efetivo|floatformat:2 }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Lucro (%)</label>
+                                        <input type="number" step="0.01" name="lucro" class="form-control" 
+                                               value="{{ preco.lucro|default:'' }}" placeholder="{{ preco.canal.lucro_efetivo|floatformat:2 }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Promoção (%)</label>
+                                        <input type="number" step="0.01" name="promocao" class="form-control" 
+                                               value="{{ preco.promocao|default:'' }}" placeholder="{{ preco.canal.promocao_efetivo|floatformat:2 }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Mínimo (%)</label>
+                                        <input type="number" step="0.01" name="minimo" class="form-control" 
+                                               value="{{ preco.minimo|default:'' }}" placeholder="{{ preco.canal.minimo_efetivo|floatformat:2 }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Ads (%)</label>
+                                        <input type="number" step="0.01" name="ads" class="form-control" 
+                                               value="{{ preco.ads|default:'' }}" placeholder="{{ preco.canal.ads_efetivo|floatformat:2 }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="mb-3">
+                                        <label class="form-label">Comissão (%)</label>
+                                        <input type="number" step="0.01" name="comissao" class="form-control" 
+                                               value="{{ preco.comissao|default:'' }}" placeholder="{{ preco.canal.comissao_efetivo|floatformat:2 }}">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
                     <div class="card">
                         <div class="card-header">Valores Manuais (quando cálculo automático desativado)</div>
                         <div class="card-body">

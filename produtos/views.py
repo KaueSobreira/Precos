@@ -253,6 +253,17 @@ def preco_edit(request, pk):
         frete_especifico = request.POST.get('frete_especifico')
         preco.frete_especifico = frete_especifico if frete_especifico else None
 
+        # Overrides de Parâmetros
+        for field in ['imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao']:
+            val = request.POST.get(field)
+            if val and val.strip():
+                try:
+                    setattr(preco, field, Decimal(val.replace(',', '.')))
+                except:
+                    pass # Ignora valores inválidos
+            else:
+                setattr(preco, field, None)
+
         motivo = request.POST.get('motivo', '')
 
         try:

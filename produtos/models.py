@@ -37,10 +37,14 @@ class Produto(models.Model):
             total += item.custo_total
         return total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
-    def _calcular_preco_iterativo(self, canal, markup_target, frete_fixo=None, max_iteracoes=10, custo_base=None):
+    def _calcular_preco_iterativo(self, canal, markup_target, markup_frete=None, frete_fixo=None, max_iteracoes=10, custo_base=None):
         # Resolve: Preço = (Custo + Taxa(Preço)) * Markup + Frete(Peso, Preço) * Markup_Frete
         peso = self.peso_produto
         custo = custo_base if custo_base is not None else self.custo
+        
+        # Se markup_frete não for passado (ex: chamada antiga), usa do canal
+        if markup_frete is None:
+            markup_frete = canal.markup_frete
 
         preco_venda = Decimal('0.00')
         frete = frete_fixo if frete_fixo is not None else canal.obter_frete(
@@ -52,7 +56,7 @@ class Produto(models.Model):
         taxa = Decimal('0.00')
 
         for _ in range(max_iteracoes):
-            novo_preco = ((custo + taxa) * markup_target) + (frete * canal.markup_frete)
+            novo_preco = ((custo + taxa) * markup_target) + (frete * markup_frete)
             novo_preco = novo_preco.quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
 
             nova_taxa = canal.obter_taxa_extra(preco_venda=novo_preco)
@@ -79,16 +83,16 @@ class Produto(models.Model):
 
         return preco_venda, frete, taxa
 
-    def calcular_preco_venda(self, canal, frete=None, custo_base=None):
-        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_venda, frete_fixo=frete, custo_base=custo_base)
+    def calcular_preco_venda(self, canal, frete=None, custo_base=None, markup_frete=None):
+        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_venda, markup_frete=markup_frete, frete_fixo=frete, custo_base=custo_base)
         return preco
 
-    def calcular_preco_promocao(self, canal, frete=None, custo_base=None):
-        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_promocao, frete_fixo=frete, custo_base=custo_base)
+    def calcular_preco_promocao(self, canal, frete=None, custo_base=None, markup_frete=None):
+        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_promocao, markup_frete=markup_frete, frete_fixo=frete, custo_base=custo_base)
         return preco
 
-    def calcular_preco_minimo(self, canal, frete=None, custo_base=None):
-        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_minimo, frete_fixo=frete, custo_base=custo_base)
+    def calcular_preco_minimo(self, canal, frete=None, custo_base=None, markup_frete=None):
+        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_minimo, markup_frete=markup_frete, frete_fixo=frete, custo_base=custo_base)
         return preco
 
 
@@ -226,6 +230,15 @@ class PrecoProdutoCanal(models.Model):
     canal = models.ForeignKey(CanalVenda, related_name='precos_produtos', on_delete=models.CASCADE)
     usar_calculo_automatico = models.BooleanField(default=True)
 
+    # Overrides de Parâmetros (%)
+    imposto = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Imposto (%)')
+    operacao = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Operação (%)')
+    lucro = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Lucro (%)')
+    promocao = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Promoção (%)')
+    minimo = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Mínimo (%)')
+    ads = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Ads (%)')
+    comissao = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name='Comissão (%)')
+
     # Preços manuais (usados quando usar_calculo_automatico=False)
     preco_venda_manual = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     preco_promocao_manual = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -253,6 +266,70 @@ class PrecoProdutoCanal(models.Model):
     def __str__(self):
         return f"{self.produto.sku} - {self.canal.nome}"
 
+    # ============================================================
+    # Parâmetros Efetivos (Produto > Canal > Grupo)
+    # ============================================================
+
+    def _get_valor_efetivo(self, campo):
+        valor_proprio = getattr(self, campo)
+        if valor_proprio is not None:
+            return valor_proprio
+        return getattr(self.canal, f"{campo}_efetivo")
+
+    @property
+    def imposto_efetivo(self): return self._get_valor_efetivo('imposto')
+    @property
+    def operacao_efetivo(self): return self._get_valor_efetivo('operacao')
+    @property
+    def lucro_efetivo(self): return self._get_valor_efetivo('lucro')
+    @property
+    def promocao_efetivo(self): return self._get_valor_efetivo('promocao')
+    @property
+    def minimo_efetivo(self): return self._get_valor_efetivo('minimo')
+    @property
+    def ads_efetivo(self): return self._get_valor_efetivo('ads')
+    @property
+    def comissao_efetivo(self): return self._get_valor_efetivo('comissao')
+
+    # ============================================================
+    # Markups Calculados (Baseado nos parâmetros efetivos)
+    # ============================================================
+
+    @property
+    def markup_frete(self):
+        denominador = Decimal('100') - (
+            self.imposto_efetivo + self.ads_efetivo + self.comissao_efetivo
+        )
+        if denominador <= 0: return Decimal('0')
+        return Decimal('100') * (Decimal('1') / denominador)
+
+    @property
+    def markup_venda(self):
+        denominador = Decimal('100') - (
+            self.imposto_efetivo + self.operacao_efetivo +
+            self.lucro_efetivo + self.ads_efetivo + self.comissao_efetivo
+        )
+        if denominador <= 0: return Decimal('0')
+        return Decimal('100') * (Decimal('1') / denominador)
+
+    @property
+    def markup_promocao(self):
+        denominador = Decimal('100') - (
+            self.imposto_efetivo + self.operacao_efetivo +
+            self.promocao_efetivo + self.ads_efetivo + self.comissao_efetivo
+        )
+        if denominador <= 0: return Decimal('0')
+        return Decimal('100') * (Decimal('1') / denominador)
+
+    @property
+    def markup_minimo(self):
+        denominador = Decimal('100') - (
+            self.imposto_efetivo + self.operacao_efetivo +
+            self.minimo_efetivo + self.ads_efetivo + self.comissao_efetivo
+        )
+        if denominador <= 0: return Decimal('0')
+        return Decimal('100') * (Decimal('1') / denominador)
+
     @property
     def frete_aplicado(self):
         """Retorna o frete específico ou o calculado."""
@@ -276,8 +353,15 @@ class PrecoProdutoCanal(models.Model):
             return self.preco_venda_manual
         if self.preco_venda_calculado is not None:
             return self.preco_venda_calculado
-        # Fallback: calcula em tempo real
-        return self.produto.calcular_preco_venda(self.canal, self.frete_especifico)
+        # Fallback: calcula em tempo real usando markups locais
+        preco, _, _ = self.produto._calcular_preco_iterativo(
+            self.canal, 
+            markup_target=self.markup_venda,
+            markup_frete=self.markup_frete,
+            frete_fixo=self.frete_especifico,
+            custo_base=self._obter_custo_base_grupo()
+        )
+        return preco
 
     @property
     def preco_promocao(self):
@@ -287,7 +371,14 @@ class PrecoProdutoCanal(models.Model):
         if self.preco_promocao_calculado is not None:
             return self.preco_promocao_calculado
         # Fallback: calcula em tempo real
-        return self.produto.calcular_preco_promocao(self.canal, self.frete_especifico)
+        preco, _, _ = self.produto._calcular_preco_iterativo(
+            self.canal, 
+            markup_target=self.markup_promocao,
+            markup_frete=self.markup_frete,
+            frete_fixo=self.frete_especifico,
+            custo_base=self._obter_custo_base_grupo()
+        )
+        return preco
 
     @property
     def preco_minimo(self):
@@ -297,7 +388,14 @@ class PrecoProdutoCanal(models.Model):
         if self.preco_minimo_calculado is not None:
             return self.preco_minimo_calculado
         # Fallback: calcula em tempo real
-        return self.produto.calcular_preco_minimo(self.canal, self.frete_especifico)
+        preco, _, _ = self.produto._calcular_preco_iterativo(
+            self.canal, 
+            markup_target=self.markup_minimo,
+            markup_frete=self.markup_frete,
+            frete_fixo=self.frete_especifico,
+            custo_base=self._obter_custo_base_grupo()
+        )
+        return preco
 
     def _obter_custo_base_grupo(self):
         """Determina o custo base seguindo a estratégia do grupo."""
@@ -436,20 +534,52 @@ class PrecoProdutoCanal(models.Model):
         if usar_preco_promo:
             # 1. Calcula preco_promocao primeiro (frete itera normalmente)
             preco_promocao, frete_promo, _ = self.produto._calcular_preco_iterativo(
-                canal, canal.markup_promocao, frete_fixo=None, custo_base=custo
+                canal, 
+                markup_target=self.markup_promocao,
+                markup_frete=self.markup_frete,
+                frete_fixo=None, 
+                custo_base=custo
             )
 
             # 2. Usa o frete convergido do promo para calcular os demais precos
-            preco_venda = self.produto.calcular_preco_venda(canal, frete=frete_promo, custo_base=custo)
-            preco_minimo = self.produto.calcular_preco_minimo(canal, frete=frete_promo, custo_base=custo)
+            preco_venda, _, _ = self.produto._calcular_preco_iterativo(
+                canal, 
+                markup_target=self.markup_venda,
+                markup_frete=self.markup_frete,
+                frete_fixo=frete_promo, 
+                custo_base=custo
+            )
+            preco_minimo, _, _ = self.produto._calcular_preco_iterativo(
+                canal, 
+                markup_target=self.markup_minimo,
+                markup_frete=self.markup_frete,
+                frete_fixo=frete_promo, 
+                custo_base=custo
+            )
             frete = frete_promo
         else:
             # Calculo normal - usa frete convergido do preco_venda
             preco_venda, frete_iter, _ = self.produto._calcular_preco_iterativo(
-                canal, canal.markup_venda, frete_fixo=frete_base, custo_base=custo
+                canal, 
+                markup_target=self.markup_venda,
+                markup_frete=self.markup_frete,
+                frete_fixo=frete_base, 
+                custo_base=custo
             )
-            preco_promocao = self.produto.calcular_preco_promocao(canal, frete_base, custo_base=custo)
-            preco_minimo = self.produto.calcular_preco_minimo(canal, frete_base, custo_base=custo)
+            preco_promocao, _, _ = self.produto._calcular_preco_iterativo(
+                canal, 
+                markup_target=self.markup_promocao,
+                markup_frete=self.markup_frete,
+                frete_fixo=frete_base, 
+                custo_base=custo
+            )
+            preco_minimo, _, _ = self.produto._calcular_preco_iterativo(
+                canal, 
+                markup_target=self.markup_minimo,
+                markup_frete=self.markup_frete,
+                frete_fixo=frete_base, 
+                custo_base=custo
+            )
             frete = frete_base if frete_base is not None else frete_iter
 
         # O custo armazenado deve ser o que foi usado no cálculo
