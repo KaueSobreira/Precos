@@ -37,7 +37,7 @@
                                value="{{ form.titulo.value|default_if_none:'' }}" required>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-2">
                     <div class="mb-3">
                         <label for="id_ativo" class="form-label">Status</label>
                         <div class="form-check form-switch mt-2">
@@ -47,21 +47,45 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-md-2">
+                    <div class="mb-3">
+                        <label for="id_desconto_estrategico" class="form-label">Desconto</label>
+                        <div class="form-check form-switch mt-2">
+                            <input type="checkbox" name="desconto_estrategico" class="form-check-input" id="id_desconto_estrategico"
+                                   {% if form.desconto_estrategico.value %}checked{% endif %}>
+                            <label class="form-check-label" for="id_desconto_estrategico">Estratégico</label>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
                         <label for="id_sku" class="form-label">SKU *</label>
                         <input type="text" name="sku" class="form-control" id="id_sku"
                                value="{{ form.sku.value|default_if_none:'' }}" required>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="mb-3">
                         <label for="id_ean" class="form-label">EAN</label>
                         <input type="text" name="ean" class="form-control" id="id_ean"
                                value="{{ form.ean.value|default_if_none:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_mlb" class="form-label">MLB</label>
+                        <input type="text" name="mlb" class="form-control" id="id_mlb"
+                               value="{{ form.mlb.value|default_if_none:'' }}">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="mb-3">
+                        <label for="id_mlb_vinculado" class="form-label">MLB Vinculado</label>
+                        <input type="text" name="mlb_vinculado" class="form-control" id="id_mlb_vinculado"
+                               value="{{ form.mlb_vinculado.value|default_if_none:'' }}">
                     </div>
                 </div>
             </div>

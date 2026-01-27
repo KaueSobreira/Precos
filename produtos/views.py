@@ -64,7 +64,7 @@ class ProdutoDetailView(DetailView):
 class ProdutoCreateView(CreateView):
     model = Produto
     template_name = 'produtos/produto_form.html'
-    fields = ['titulo', 'sku', 'ean', 'largura', 'altura', 'profundidade', 'peso_fisico', 'ativo']
+    fields = ['titulo', 'sku', 'ean', 'mlb', 'mlb_vinculado', 'largura', 'altura', 'profundidade', 'peso_fisico', 'desconto_estrategico', 'ativo']
 
     def get_success_url(self):
         # Redireciona para a ficha técnica após criar o produto
@@ -78,7 +78,7 @@ class ProdutoCreateView(CreateView):
 class ProdutoUpdateView(UpdateView):
     model = Produto
     template_name = 'produtos/produto_form.html'
-    fields = ['titulo', 'sku', 'ean', 'largura', 'altura', 'profundidade', 'peso_fisico', 'ativo']
+    fields = ['titulo', 'sku', 'ean', 'mlb', 'mlb_vinculado', 'largura', 'altura', 'profundidade', 'peso_fisico', 'desconto_estrategico', 'ativo']
 
     def get_success_url(self):
         return reverse('produto_detail', kwargs={'pk': self.object.pk})

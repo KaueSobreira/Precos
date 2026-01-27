@@ -9,9 +9,12 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(), name='logout'),
 
+    # API
+    path('api/v1/', include('api.urls')),
+
     # Apps do sistema
     path('', include('produtos.urls')),
-    path('', include('docs.urls')),
+    path('api/v1/', include('docs.urls')),
     path('grupos/', include('grupo_vendas.urls')),
     path('canais/', include('canais_vendas.urls')),
     path('tabelas-frete/', include('tabela_frete.urls')),

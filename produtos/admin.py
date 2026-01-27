@@ -27,8 +27,8 @@ class PrecoProdutoCanalInline(admin.TabularInline):
 
 @admin.register(Produto)
 class ProdutoAdmin(admin.ModelAdmin):
-    list_display = ['sku', 'titulo', 'custo', 'qtd_titulos', 'ativo']
-    search_fields = ['sku', 'titulo', 'titulos__titulo']
+    list_display = ['sku', 'titulo', 'mlb', 'custo', 'qtd_titulos', 'ativo']
+    search_fields = ['sku', 'titulo', 'titulos__titulo', 'mlb', 'mlb_vinculado']
     list_filter = ['ativo']
     inlines = [TituloProdutoInline, ItemFichaTecnicaInline, PrecoProdutoCanalInline]
 

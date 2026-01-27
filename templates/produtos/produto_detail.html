@@ -23,6 +23,15 @@
                     <div class="col-md-6">
                         <p><strong>SKU:</strong> {{ produto.sku }}</p>
                         <p><strong>EAN:</strong> {{ produto.ean|default:"-" }}</p>
+                        <p><strong>MLB:</strong> {{ produto.mlb|default:"-" }}</p>
+                        <p><strong>MLB Vinculado:</strong> {{ produto.mlb_vinculado|default:"-" }}</p>
+                        <p><strong>Desconto Estratégico:</strong>
+                            {% if produto.desconto_estrategico %}
+                            <span class="badge bg-warning text-dark">Sim</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Não</span>
+                            {% endif %}
+                        </p>
                         <p><strong>Status:</strong>
                             {% if produto.ativo %}
                             <span class="badge bg-success">Ativo</span>
