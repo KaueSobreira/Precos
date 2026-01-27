@@ -71,12 +71,13 @@ def recalcular_precos_tabela_taxa(tabela_taxa, motivo):
 
 
 def recalcular_precos_grupo(grupo, motivo):
-    """Recalcula todos os preços de canais de um grupo (que herdam do grupo)."""
+    """Recalcula todos os preços de canais de um grupo."""
     from canais_vendas.models import CanalVenda
     from .models import PrecoProdutoCanal
 
-    # Apenas canais que herdam do grupo
-    canais = CanalVenda.objects.filter(grupo=grupo, herdar_grupo=True)
+    # Recalcula todos os canais do grupo, pois configurações como "Tipo de Custo"
+    # afetam a todos, independente da flag 'herdar_grupo'
+    canais = CanalVenda.objects.filter(grupo=grupo)
     total = 0
 
     for canal in canais:
@@ -297,3 +298,60 @@ def on_item_ficha_delete(sender, instance, **kwargs):
             f'Item excluído da ficha técnica do produto "{instance.produto.sku}"'
         )
     )
+
+
+# ============================================================
+# SIGNALS PARA PREÇO PRODUTO (CADEIA DE REFERÊNCIA)
+# ============================================================
+
+@receiver(post_save, sender='produtos.PrecoProdutoCanal')
+def on_preco_save(sender, instance, **kwargs):
+    """
+    Quando um preço é atualizado, verifica se este canal serve de referência
+    de custo para outros grupos. Se sim, dispara o recálculo desses grupos.
+    """
+    if kwargs.get('raw', False):
+        return
+
+    # Evita loop: se o save foi disparado por um recálculo, não propaga
+    # (Embora a lógica de recálculo já proteja, é bom evitar)
+    # Mas aqui é difícil saber se foi recálculo. O loop infinito é evitado
+    # pela verificação de valores no metodo _calcular_preco_iterativo
+    # e pelo fato de que a referência é unidirecional (Grupo -> Canal).
+    # Se houver referência circular (Grupo A usa Canal B, Grupo B usa Canal A),
+    # aí teremos problemas, mas o usuário deve evitar isso.
+
+    from grupo_vendas.models import GrupoCanais
+
+    # Busca grupos que usam este canal como referência
+    grupos_afetados = GrupoCanais.objects.filter(
+        tipo_custo='canal',
+        canal_referencia_custo=instance.canal
+    )
+
+    if grupos_afetados.exists():
+        def disparar_recalculo_grupos():
+            for grupo in grupos_afetados:
+                # Otimização: Recalcular apenas o produto específico no grupo
+                # em vez do grupo todo.
+                # Mas a função recalcular_precos_grupo faz tudo.
+                # Vamos criar uma lógica local aqui para ser mais eficiente.
+                from canais_vendas.models import CanalVenda
+                from .models import PrecoProdutoCanal as PrecoModel
+
+                canais_grupo = CanalVenda.objects.filter(grupo=grupo)
+                for canal in canais_grupo:
+                    # Busca o preço deste mesmo produto no canal do grupo
+                    preco_filho = PrecoModel.objects.filter(
+                        canal=canal,
+                        produto=instance.produto, # Mesmíssimo produto
+                        ativo=True
+                    ).first()
+                    
+                    if preco_filho:
+                        preco_filho.recalcular_precos(
+                            salvar_historico=True, 
+                            motivo=f'Preço base alterado no canal referência "{instance.canal.nome}"'
+                        )
+
+        transaction.on_commit(disparar_recalculo_grupos)

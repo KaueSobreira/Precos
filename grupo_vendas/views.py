@@ -30,7 +30,7 @@ class GrupoDetailView(DetailView):
 class GrupoCreateView(CreateView):
     model = GrupoCanais
     template_name = 'grupo_vendas/grupo_form.html'
-    fields = ['nome', 'descricao', 'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao']
+    fields = ['nome', 'descricao', 'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao', 'tipo_custo', 'canal_referencia_custo']
     success_url = reverse_lazy('grupo_list')
 
     def form_valid(self, form):
@@ -41,7 +41,7 @@ class GrupoCreateView(CreateView):
 class GrupoUpdateView(UpdateView):
     model = GrupoCanais
     template_name = 'grupo_vendas/grupo_form.html'
-    fields = ['nome', 'descricao', 'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao']
+    fields = ['nome', 'descricao', 'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao', 'tipo_custo', 'canal_referencia_custo']
     success_url = reverse_lazy('grupo_list')
 
     def form_valid(self, form):

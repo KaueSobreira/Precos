@@ -75,6 +75,27 @@ class GrupoCanais(models.Model):
         verbose_name='Comissão (%)'
     )
 
+    # Configuração de Custo Base
+    TIPO_CUSTO_CHOICES = [
+        ('padrao', 'Custo Padrão (Ficha Técnica)'),
+        ('canal', 'Baseado no Preço de Venda de outro Canal'),
+    ]
+    tipo_custo = models.CharField(
+        max_length=10,
+        choices=TIPO_CUSTO_CHOICES,
+        default='padrao',
+        verbose_name='Origem do Custo'
+    )
+    canal_referencia_custo = models.ForeignKey(
+        'canais_vendas.CanalVenda',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='grupos_referencia',
+        verbose_name='Canal de Referência',
+        help_text='Se selecionado, o Custo Base será o Preço de Venda deste canal.'
+    )
+
     # Metadados
     criado_em = models.DateTimeField(auto_now_add=True, verbose_name='Criado em')
     atualizado_em = models.DateTimeField(auto_now=True, verbose_name='Atualizado em')
