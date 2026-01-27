@@ -3,6 +3,35 @@ from decimal import Decimal
 
 from produtos.models import Produto, TituloProduto, ItemFichaTecnica, PrecoProdutoCanal
 from canais_vendas.models import CanalVenda
+from grupo_vendas.models import GrupoCanais
+
+
+# ============================================================
+# Serializers de referência (GET) - Grupos e Canais
+# ============================================================
+
+class CanalVendaListSerializer(serializers.ModelSerializer):
+    grupo_id = serializers.IntegerField(source='grupo.id', read_only=True)
+    grupo_nome = serializers.CharField(source='grupo.nome', read_only=True)
+
+    class Meta:
+        model = CanalVenda
+        fields = [
+            'id', 'nome', 'grupo_id', 'grupo_nome',
+            'herdar_grupo', 'tipo_frete', 'ativo',
+        ]
+
+
+class GrupoCanaisListSerializer(serializers.ModelSerializer):
+    canais = CanalVendaListSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = GrupoCanais
+        fields = [
+            'id', 'nome', 'descricao', 'is_default',
+            'imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao',
+            'tipo_custo', 'canais',
+        ]
 
 
 # ============================================================

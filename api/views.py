@@ -6,12 +6,38 @@ from drf_spectacular.utils import extend_schema
 
 from produtos.models import Produto, TituloProduto, ItemFichaTecnica, PrecoProdutoCanal
 from canais_vendas.models import CanalVenda
-from .serializers import ProdutoCreateSerializer, ProdutoListSerializer
+from grupo_vendas.models import GrupoCanais
+from .serializers import (
+    ProdutoCreateSerializer, ProdutoListSerializer,
+    CanalVendaListSerializer, GrupoCanaisListSerializer,
+)
 
 
 class ProdutoPagination(CursorPagination):
     page_size = 50
     ordering = '-criado_em'
+
+
+class GrupoCanaisViewSet(viewsets.ViewSet):
+    @extend_schema(
+        responses=GrupoCanaisListSerializer(many=True),
+        description='Lista todos os grupos de canais com seus canais.',
+    )
+    def list(self, request):
+        queryset = GrupoCanais.objects.prefetch_related('canais').order_by('-is_default', 'nome')
+        serializer = GrupoCanaisListSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class CanalVendaViewSet(viewsets.ViewSet):
+    @extend_schema(
+        responses=CanalVendaListSerializer(many=True),
+        description='Lista todos os canais de venda ativos.',
+    )
+    def list(self, request):
+        queryset = CanalVenda.objects.filter(ativo=True).select_related('grupo').order_by('grupo__nome', 'nome')
+        serializer = CanalVendaListSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class ProdutoViewSet(viewsets.ViewSet):
