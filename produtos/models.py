@@ -2,7 +2,7 @@ from django.db import models
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import transaction
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 from canais_vendas.models import CanalVenda
 
@@ -235,6 +235,8 @@ class PrecoProdutoCanal(models.Model):
     preco_venda_calculado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     preco_promocao_calculado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     preco_minimo_calculado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    preco_promocao_arredondado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Preco Promo Arredondado')
+    preco_minimo_arredondado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, verbose_name='Preco Min Arredondado')
     frete_calculado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     custo_calculado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     taxa_calculada = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
@@ -317,6 +319,37 @@ class PrecoProdutoCanal(models.Model):
         if self.preco_venda <= 0:
             return Decimal('0.00')
         return ((self.preco_venda - self.preco_minimo) / self.preco_venda * Decimal('100')).quantize(Decimal('0.01'))
+
+    @staticmethod
+    def _arredondar_preco(valor):
+        """
+        Arredondamento comercial (replica formula Excel):
+        =SE(VALOR(DIREITA(TEXTO(val;"0,00");2))<50; INT(val)-0,1; ARRED(val;1))
+
+        Se centavos < 50: piso do valor - 0,10  (ex: 52.30 -> 51.90)
+        Se centavos >= 50: arredonda p/ 1 casa   (ex: 52.97 -> 53.00)
+        """
+        if valor is None or valor <= 0:
+            return valor
+        centavos = int((valor % 1) * 100)
+        if centavos < 50:
+            return Decimal(int(valor)) - Decimal('0.10')
+        else:
+            return valor.quantize(Decimal('0.1'), rounding=ROUND_HALF_UP)
+
+    @property
+    def preco_promocao_arred(self):
+        """Retorna o preco promocional arredondado (armazenado ou calculado)."""
+        if self.preco_promocao_arredondado is not None:
+            return self.preco_promocao_arredondado
+        return self._arredondar_preco(self.preco_promocao)
+
+    @property
+    def preco_minimo_arred(self):
+        """Retorna o preco minimo arredondado (armazenado ou calculado)."""
+        if self.preco_minimo_arredondado is not None:
+            return self.preco_minimo_arredondado
+        return self._arredondar_preco(self.preco_minimo)
 
     def salvar_historico(self, usuario=None, motivo=''):
         """Salva um snapshot imutável dos preços atuais com todos os parâmetros."""
@@ -417,6 +450,8 @@ class PrecoProdutoCanal(models.Model):
         self.preco_venda_calculado = preco_venda
         self.preco_promocao_calculado = preco_promocao
         self.preco_minimo_calculado = preco_minimo
+        self.preco_promocao_arredondado = self._arredondar_preco(preco_promocao)
+        self.preco_minimo_arredondado = self._arredondar_preco(preco_minimo)
         self.frete_calculado = frete
         self.taxa_calculada = taxa
         self.calculado_em = timezone.now()
@@ -444,6 +479,8 @@ class PrecoProdutoCanal(models.Model):
             self.preco_venda_calculado = preco_venda
             self.preco_promocao_calculado = preco_promocao
             self.preco_minimo_calculado = preco_minimo
+            self.preco_promocao_arredondado = self._arredondar_preco(preco_promocao)
+            self.preco_minimo_arredondado = self._arredondar_preco(preco_minimo)
             self.frete_calculado = frete
             self.taxa_calculada = taxa
             self.calculado_em = timezone.now()
