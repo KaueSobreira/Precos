@@ -67,7 +67,9 @@
                         <td class="text-end">R$ {{ preco.frete_aplicado|floatformat:2 }}</td>
                         <td class="text-end"><span class="badge bg-primary badge-preco">R$ {{ preco.preco_venda|floatformat:2 }}</span></td>
                         <td class="text-end"><span class="badge bg-warning text-dark badge-preco">R$ {{ preco.preco_promocao|floatformat:2 }}</span></td>
+                        <td class="text-end"><span class="badge bg-warning badge-preco">R$ {{ preco.preco_promocao_arred|floatformat:2 }}</span></td>
                         <td class="text-end"><span class="badge bg-danger badge-preco">R$ {{ preco.preco_minimo|floatformat:2 }}</span></td>
+                        <td class="text-end"><span class="badge bg-danger badge-preco" style="opacity:0.8">R$ {{ preco.preco_minimo_arred|floatformat:2 }}</span></td>
                         <td class="text-end">{{ preco.desconto_maximo_percentual }}%</td>
                         <td>
                             <a href="{% url 'preco_edit' preco.pk %}" class="btn btn-sm btn-outline-primary" title="Editar">
@@ -77,7 +79,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="9" class="text-center py-4 text-muted">
+                        <td colspan="11" class="text-center py-4 text-muted">
                             Nenhum preço encontrado.
                         </td>
                     </tr>

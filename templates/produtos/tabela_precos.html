@@ -48,12 +48,11 @@
         </form>
 
         <div class="table-responsive">
-            <table class="table table-hover table-striped">
+            <table class="table table-hover table-striped table-sm align-middle">
                 <thead>
                     <tr>
-                        <th>Título Anúncio</th>
-                        <th>SKU (Pai)</th>
-                        <th>Grupo</th>
+                        <th>SKU</th>
+                        <th>Produto (Título Principal)</th>
                         <th>Canal</th>
                         <th class="text-end">Frete</th>
                         <th class="text-end">Preço Venda</th>
@@ -61,21 +60,26 @@
                         <th class="text-end">Promo Arred.</th>
                         <th class="text-end">Preço Mín.</th>
                         <th class="text-end">Mín. Arred.</th>
-                        <th>Tipo</th>
+                        <th class="text-end">Desc. Máx.</th>
+                        <th class="text-center">Ações</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for row in rows %}
                     <tr>
                         <td>
-                            <strong>{{ row.titulo }}</strong>
-                        </td>
-                        <td>
                             <a href="{% url 'produto_detail' row.obj.produto.pk %}" class="text-decoration-none">
                                 {{ row.obj.produto.sku }}
                             </a>
                         </td>
-                        <td>{{ row.obj.canal.grupo.nome }}</td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 300px;" title="{{ row.titulo }}">
+                                {{ row.titulo }}
+                                {% if not row.is_main %}
+                                <small class="text-muted ms-1">(Variação)</small>
+                                {% endif %}
+                            </div>
+                        </td>
                         <td>{{ row.obj.canal.nome }}</td>
                         <td class="text-end">R$ {{ row.obj.frete_aplicado|floatformat:2 }}</td>
                         <td class="text-end"><span class="badge bg-primary badge-preco">R$ {{ row.obj.preco_venda|floatformat:2 }}</span></td>
@@ -83,12 +87,11 @@
                         <td class="text-end"><span class="badge bg-warning badge-preco">R$ {{ row.obj.preco_promocao_arred|floatformat:2 }}</span></td>
                         <td class="text-end"><span class="badge bg-danger badge-preco">R$ {{ row.obj.preco_minimo|floatformat:2 }}</span></td>
                         <td class="text-end"><span class="badge bg-danger badge-preco" style="opacity:0.8">R$ {{ row.obj.preco_minimo_arred|floatformat:2 }}</span></td>
-                        <td>
-                            {% if row.is_main %}
-                            <span class="badge bg-secondary">Principal</span>
-                            {% else %}
-                            <span class="badge bg-info text-dark">Variação</span>
-                            {% endif %}
+                        <td class="text-end">{{ row.obj.desconto_maximo_percentual }}%</td>
+                        <td class="text-center">
+                            <a href="{% url 'preco_edit' row.obj.pk %}" class="btn btn-sm btn-outline-primary" title="Editar Preço">
+                                <i class="bi bi-pencil"></i>
+                            </a>
                         </td>
                     </tr>
                     {% empty %}
