@@ -147,6 +147,28 @@ def on_regra_simples_delete(sender, instance, **kwargs):
     )
 
 
+@receiver(post_save, sender='tabela_frete.RegraFreteEspecial')
+def on_regra_especial_save(sender, instance, **kwargs):
+    """Quando uma regra especial e alterada."""
+    transaction.on_commit(
+        lambda: recalcular_precos_tabela_frete(
+            instance.tabela,
+            f'Regra especial de frete atualizada na tabela "{instance.tabela.nome}"'
+        )
+    )
+
+
+@receiver(post_delete, sender='tabela_frete.RegraFreteEspecial')
+def on_regra_especial_delete(sender, instance, **kwargs):
+    """Quando uma regra especial e excluida."""
+    transaction.on_commit(
+        lambda: recalcular_precos_tabela_frete(
+            instance.tabela,
+            f'Regra especial de frete excluida da tabela "{instance.tabela.nome}"'
+        )
+    )
+
+
 @receiver(post_save, sender='tabela_frete.DescontoNotaVendedor')
 def on_desconto_nota_save(sender, instance, **kwargs):
     """Quando um desconto por nota é alterado."""

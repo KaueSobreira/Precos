@@ -23,6 +23,13 @@ class TabelaFrete(models.Model):
     # Nova Lógica: Acima de 1 Metro
     usa_tabela_excedente = models.BooleanField(default=False, verbose_name='Tabela Diferenciada > 1m')
 
+    # Frete baseado no preço promocional
+    usar_preco_promocao = models.BooleanField(
+        default=False,
+        verbose_name='Usar Preco Promocao para Frete',
+        help_text='Se marcado, o frete sera calculado com base no preco promocional. O frete convergido do preco promocional sera usado para calcular preco de venda e preco minimo.'
+    )
+
     criado_em = models.DateTimeField(auto_now_add=True)
     atualizado_em = models.DateTimeField(auto_now=True)
 

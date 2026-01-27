@@ -41,49 +41,55 @@ class Produto(models.Model):
         # Resolve: Preço = (Custo + Taxa(Preço)) * Markup + Frete(Peso, Preço) * Markup_Frete
         peso = self.peso_produto
         custo = self.custo
-        
+
         preco_venda = Decimal('0.00')
         frete = frete_fixo if frete_fixo is not None else canal.obter_frete(
-            peso_produto=peso, 
-            largura=self.largura, 
-            altura=self.altura, 
+            peso_produto=peso,
+            largura=self.largura,
+            altura=self.altura,
             profundidade=self.profundidade
         )
         taxa = Decimal('0.00')
 
         for _ in range(max_iteracoes):
-            # 1. Calcula novo preço baseado nos componentes atuais
-            # Nota: Taxa e Frete podem depender do preço
             novo_preco = ((custo + taxa) * markup_target) + (frete * canal.markup_frete)
             novo_preco = novo_preco.quantize(Decimal('0.01'))
 
-            # 2. Atualiza componentes baseados no novo preço
             nova_taxa = canal.obter_taxa_extra(preco_venda=novo_preco)
             novo_frete = frete_fixo if frete_fixo is not None else canal.obter_frete(
-                peso_produto=peso, 
+                peso_produto=peso,
                 preco_venda=novo_preco,
-                largura=self.largura, 
-                altura=self.altura, 
+                largura=self.largura,
+                altura=self.altura,
                 profundidade=self.profundidade
             )
 
+            # Previne oscilação: se o frete caiu para 0 (nenhuma regra cobriu o
+            # preço calculado) mas antes era positivo, mantém o frete anterior.
+            # Isso ocorre quando o preço + frete ultrapassa a faixa máxima da tabela.
+            if frete_fixo is None and novo_frete == Decimal('0.00') and frete > Decimal('0.00'):
+                novo_frete = frete
+
             if novo_preco == preco_venda and nova_taxa == taxa and novo_frete == frete:
                 break
-            
+
             preco_venda = novo_preco
             taxa = nova_taxa
             frete = novo_frete
 
-        return preco_venda
+        return preco_venda, frete, taxa
 
     def calcular_preco_venda(self, canal, frete=None):
-        return self._calcular_preco_iterativo(canal, canal.markup_venda, frete_fixo=frete)
+        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_venda, frete_fixo=frete)
+        return preco
 
     def calcular_preco_promocao(self, canal, frete=None):
-        return self._calcular_preco_iterativo(canal, canal.markup_promocao, frete_fixo=frete)
+        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_promocao, frete_fixo=frete)
+        return preco
 
     def calcular_preco_minimo(self, canal, frete=None):
-        return self._calcular_preco_iterativo(canal, canal.markup_minimo, frete_fixo=frete)
+        preco, _, _ = self._calcular_preco_iterativo(canal, canal.markup_minimo, frete_fixo=frete)
+        return preco
 
 
 class TituloProduto(models.Model):
@@ -351,6 +357,47 @@ class PrecoProdutoCanal(models.Model):
             markup_minimo=canal.markup_minimo,
         )
 
+    def _calcular_todos_precos(self):
+        """
+        Calcula preco_venda, preco_promocao, preco_minimo, frete e taxa.
+        Se a tabela de frete do canal usa usar_preco_promocao, o frete e calculado
+        com base no preco promocional convergido, e esse frete fixo e usado para
+        calcular preco_venda e preco_minimo.
+        """
+        frete_base = self.frete_especifico
+        canal = self.canal
+
+        usar_preco_promo = (
+            frete_base is None
+            and canal.tipo_frete == 'tabela'
+            and canal.tabela_frete
+            and canal.tabela_frete.usar_preco_promocao
+        )
+
+        if usar_preco_promo:
+            # 1. Calcula preco_promocao primeiro (frete itera normalmente)
+            preco_promocao, frete_promo, _ = self.produto._calcular_preco_iterativo(
+                canal, canal.markup_promocao, frete_fixo=None
+            )
+
+            # 2. Usa o frete convergido do promo para calcular os demais precos
+            preco_venda = self.produto.calcular_preco_venda(canal, frete=frete_promo)
+            preco_minimo = self.produto.calcular_preco_minimo(canal, frete=frete_promo)
+            frete = frete_promo
+        else:
+            # Calculo normal - usa frete convergido do preco_venda
+            preco_venda, frete_iter, _ = self.produto._calcular_preco_iterativo(
+                canal, canal.markup_venda, frete_fixo=frete_base
+            )
+            preco_promocao = self.produto.calcular_preco_promocao(canal, frete_base)
+            preco_minimo = self.produto.calcular_preco_minimo(canal, frete_base)
+            frete = frete_base if frete_base is not None else frete_iter
+
+        custo = self.produto.custo
+        taxa = canal.obter_taxa_extra(preco_venda=preco_venda)
+
+        return preco_venda, preco_promocao, preco_minimo, frete, taxa, custo
+
     def recalcular_precos(self, salvar_historico=True, usuario=None, motivo='Recálculo automático'):
         """
         Recalcula todos os preços e salva no banco.
@@ -363,27 +410,7 @@ class PrecoProdutoCanal(models.Model):
             self.salvar_historico(usuario=usuario, motivo=motivo)
 
         # Recalcula todos os valores
-        custo = self.produto.custo
-        peso = self.produto.peso_produto
-        frete_base = self.frete_especifico
-
-        # Calcula preços usando o algoritmo iterativo
-        preco_venda = self.produto.calcular_preco_venda(self.canal, frete_base)
-        preco_promocao = self.produto.calcular_preco_promocao(self.canal, frete_base)
-        preco_minimo = self.produto.calcular_preco_minimo(self.canal, frete_base)
-
-        # Calcula frete e taxa baseados no preço de venda
-        if frete_base is not None:
-            frete = frete_base
-        else:
-            frete = self.canal.obter_frete(
-                peso_produto=peso, 
-                preco_venda=preco_venda,
-                largura=self.produto.largura,
-                altura=self.produto.altura,
-                profundidade=self.produto.profundidade
-            )
-        taxa = self.canal.obter_taxa_extra(preco_venda=preco_venda)
+        preco_venda, preco_promocao, preco_minimo, frete, taxa, custo = self._calcular_todos_precos()
 
         # Atualiza os campos calculados
         self.custo_calculado = custo
@@ -410,25 +437,8 @@ class PrecoProdutoCanal(models.Model):
         # Se é criação ou alteração manual, recalcula os preços
         if not recalculando:
             from django.utils import timezone
-            custo = self.produto.custo
-            peso = self.produto.peso_produto
-            frete_base = self.frete_especifico
 
-            preco_venda = self.produto.calcular_preco_venda(self.canal, frete_base)
-            preco_promocao = self.produto.calcular_preco_promocao(self.canal, frete_base)
-            preco_minimo = self.produto.calcular_preco_minimo(self.canal, frete_base)
-
-            if frete_base is not None:
-                frete = frete_base
-            else:
-                frete = self.canal.obter_frete(
-                    peso_produto=peso, 
-                    preco_venda=preco_venda,
-                    largura=self.produto.largura,
-                    altura=self.produto.altura,
-                    profundidade=self.produto.profundidade
-                )
-            taxa = self.canal.obter_taxa_extra(preco_venda=preco_venda)
+            preco_venda, preco_promocao, preco_minimo, frete, taxa, custo = self._calcular_todos_precos()
 
             self.custo_calculado = custo
             self.preco_venda_calculado = preco_venda

@@ -338,13 +338,13 @@ class TabelaFreteDetailView(DetailView):
 class TabelaFreteCreateView(CreateView):
     model = TabelaFrete
     template_name = 'canais_vendas/tabela_frete_form.html'
-    fields = ['nome', 'tipo', 'descricao', 'ativo', 'suporta_nota_vendedor', 'adicionar_taxa_fixa', 'valor_taxa_fixa', 'usa_tabela_excedente']
+    fields = ['nome', 'tipo', 'descricao', 'ativo', 'suporta_nota_vendedor', 'adicionar_taxa_fixa', 'valor_taxa_fixa', 'usa_tabela_excedente', 'usar_preco_promocao']
     success_url = reverse_lazy('tabela_frete_list')
 
 class TabelaFreteUpdateView(UpdateView):
     model = TabelaFrete
     template_name = 'canais_vendas/tabela_frete_form.html'
-    fields = ['nome', 'tipo', 'descricao', 'ativo', 'suporta_nota_vendedor', 'adicionar_taxa_fixa', 'valor_taxa_fixa', 'usa_tabela_excedente']
+    fields = ['nome', 'tipo', 'descricao', 'ativo', 'suporta_nota_vendedor', 'adicionar_taxa_fixa', 'valor_taxa_fixa', 'usa_tabela_excedente', 'usar_preco_promocao']
     def get_success_url(self):
         return reverse('tabela_frete_detail', kwargs={'pk': self.object.pk})
 
@@ -405,7 +405,7 @@ class RegraMatrizDeleteView(DeleteView):
 class RegraSimplesCreateView(CreateView):
     model = RegraFreteSimples
     template_name = 'tabela_frete/regra_simples_form.html'
-    fields = ['inicio', 'fim', 'valor_frete', 'ativo']
+    fields = ['inicio', 'fim', 'valor_frete', 'excedente', 'ativo']
 
     def dispatch(self, request, *args, **kwargs):
         self.tabela = get_object_or_404(TabelaFrete, pk=kwargs['tabela_pk'])
@@ -427,7 +427,7 @@ class RegraSimplesCreateView(CreateView):
 class RegraSimplesUpdateView(UpdateView):
     model = RegraFreteSimples
     template_name = 'tabela_frete/regra_simples_form.html'
-    fields = ['inicio', 'fim', 'valor_frete', 'ativo']
+    fields = ['inicio', 'fim', 'valor_frete', 'excedente', 'ativo']
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
