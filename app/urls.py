@@ -11,6 +11,7 @@ urlpatterns = [
 
     # Apps do sistema
     path('', include('produtos.urls')),
+    path('', include('docs.urls')),
     path('grupos/', include('grupo_vendas.urls')),
     path('canais/', include('canais_vendas.urls')),
     path('tabelas-frete/', include('tabela_frete.urls')),
