@@ -4,117 +4,90 @@ from canais_vendas.models import CanalVenda
 
 
 class Command(BaseCommand):
-    help = 'Popula os dados iniciais do sistema (Grupo ECOSSISTEMA e canais padrão)'
+    help = 'Popula os dados iniciais e configura as estratégias de custo por grupo'
 
     def handle(self, *args, **options):
-        self.stdout.write('Criando dados iniciais...\n')
+        self.stdout.write('Iniciando carga de dados e configurações de custo...\n')
 
-        # Criar grupo ECOSSISTEMA (padrão)
-        ecossistema, created = GrupoCanais.objects.get_or_create(
-            nome='ECOSSISTEMA',
-            defaults={
-                'descricao': 'Grupo padrão contendo todos os marketplaces e canais de venda',
+        # 1. Definição da Estrutura de Grupos e Canais
+        estrutura_grupos = {
+            'CasaMetais': {
                 'is_default': True,
-            }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS('Grupo ECOSSISTEMA criado'))
-        else:
-            self.stdout.write('Grupo ECOSSISTEMA já existe')
-
-        # Lista de canais do grupo ECOSSISTEMA (conforme PRD)
-        canais_ecossistema = [
-            'ML Clássico',
-            'ML Premium',
-            'TikTok',
-            'Temu',
-            'B2W',
-            'Magalu',
-            'SHEIN',
-            'Shopee 20%',
-            'Shopee 14%',
-            'Aliexpress',
-            'Amazon',
-            'Amazon Vendor',
-            'Carrefour / Casa & Vídeo',
-            'Colombo',
-            'Leroy',
-            'Madeiramadeira',
-            'Olist',
-            'Via Varejo',
-            'Webcontinental',
-            'Tray',
-            'Tray S3G',
-            'SteelDecor',
-            'Afiliados',
-            'Tray MetalCromo',
-            'Mc Representante',
-            'Mc Repre. Online',
-            'Mc Repr. Pronta Entrega',
-        ]
-
-        for nome_canal in canais_ecossistema:
-            canal, created = CanalVenda.objects.get_or_create(
-                nome=nome_canal,
-                grupo=ecossistema,
-                defaults={'herdar_grupo': True}
-            )
-            if created:
-                self.stdout.write(f'  Canal "{nome_canal}" criado')
-
-        self.stdout.write('')
-
-        # Criar grupos específicos
-        grupos_especificos = {
-            'STEEL': [
-                'ML Clássico Steel',
-                'ML Premium Steel',
-                'Shopee 14% Steel',
-                'Magalu Steel',
-            ],
-            'CONTEL': [
-                'ML Clássico Contel',
-                'ML Premium Contel',
-                'Shopee 14% Contel',
-                'Magalu Contel',
-            ],
-            'METALLARI': [
-                'ML Clássico Metallari',
-                'ML Premium Metallari',
-                'Shopee 14% Metallari',
-                'Magalu Metallari',
-            ],
+                'canais': [
+                    'ML Clássico', 'ML Premium', 'TikTok', 'Temu', 'ML Clássico SN',
+                    'Magalu', 'SHEIN', 'Shopee 20%', 'Shopee 14%', 'ML Premium SN',
+                    'Amazon', 'Amazon Vendor', 'Carrefour/Casa&Vídeo', 'Shopee SN 20%',
+                    'Leroy', 'Madeiramadeira', 'Olist', 'Via Varejo', 'Webcontinental',
+                    'Tray', 'Tray S3G', 'SteelDecor', 'Afiliados', 'Tray MetalCromo',
+                    'Mc Representante', 'Mc Repre. Online', 'Mc Repr. Pronta Entrega'
+                ]
+            },
+            'S3G': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Carrefour', 'B2W', 'Via Varejo', 'Tray', 'Leroy Merlin', 'Madeiramadeira', 'Magalu', 'Shopee 14%', 'Shopee 20%', 'SHEIN']},
+            'PontoDecor': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'B2W', 'Madeiramadeira']},
+            'CromoShop': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Madeiramadeira', 'Magalu', 'B2W', 'Shopee 14%', 'Shopee 20%', 'Via Varejo']},
+            'Grupo Ghiz': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Shopee 14%', 'Shopee 20%', 'Amazon', 'Magalu']},
+            'HomeFull': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Amazon', 'Via Varejo', 'B2W', 'Madeiramadeira', 'Magalu', 'Shopee 14%', 'Shopee 20%']},
+            'CasaMoveis': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'B2W', 'Shopee 14%', 'Shopee 20%', 'Magalu']},
+            'ContelStore': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Shopee 14%', 'Shopee 20%', 'Magalu']},
+            'SteelDecor Matriz': {'is_default': False, 'canais': ['ML Premium', 'ML Clássico', 'Shopee 14%', 'Shopee 20%', 'Magalu']},
+            'SteelDecor SP': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium']},
+            'SteelDecor PR': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium']},
+            'SteelDecor BA': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium']},
+            'Metallari': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Shopee 14%', 'Shopee 20%']},
+            'Favolli': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Shopee 14%', 'Shopee 20%']},
+            'BQHome': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Shopee 14%', 'Shopee 20%', 'Magalu']},
+            'Birirp': {'is_default': False, 'canais': ['ML Clássico', 'ML Premium', 'Shopee 14%', 'Shopee 20%']},
         }
 
-        for nome_grupo, canais in grupos_especificos.items():
-            grupo, created = GrupoCanais.objects.get_or_create(
+        # 2. Criar Grupos e Canais
+        for nome_grupo, dados in estrutura_grupos.items():
+            grupo, _ = GrupoCanais.objects.get_or_create(
                 nome=nome_grupo,
-                defaults={
-                    'descricao': f'Grupo específico {nome_grupo}',
-                    'is_default': False,
-                }
+                defaults={'is_default': dados['is_default']}
             )
-            if created:
-                self.stdout.write(self.style.SUCCESS(f'Grupo {nome_grupo} criado'))
-            else:
-                self.stdout.write(f'Grupo {nome_grupo} já existe')
+            for nome_canal in dados['canais']:
+                CanalVenda.objects.get_or_create(nome=nome_canal, grupo=grupo)
 
-            for nome_canal in canais:
-                canal, created = CanalVenda.objects.get_or_create(
-                    nome=nome_canal,
-                    grupo=grupo,
-                    defaults={'herdar_grupo': True}
-                )
-                if created:
-                    self.stdout.write(f'  Canal "{nome_canal}" criado')
+        # 3. Configurar Estratégias de Custo
+        self.stdout.write('\nConfigurando estratégias de custo...')
 
-            self.stdout.write('')
+        # Referências
+        grupo_casa_metais = GrupoCanais.objects.get(nome='CasaMetais')
+        canal_steel_ref = CanalVenda.objects.get(nome='SteelDecor', grupo=grupo_casa_metais)
+        canal_afiliado_ref = CanalVenda.objects.get(nome='Afiliados', grupo=grupo_casa_metais)
 
-        self.stdout.write(self.style.SUCCESS('\nDados iniciais criados com sucesso!'))
+        # Lista de Grupos que usam SteelDecor (CasaMetais) como custo
+        grupos_ref_steel = [
+            'SteelDecor Matriz', 'SteelDecor SP', 'SteelDecor PR', 
+            'SteelDecor BA', 'Metallari'
+        ]
+        
+        # Lista de Grupos que usam Afiliados (CasaMetais) como custo
+        grupos_ref_afiliados = ['ContelStore']
 
-        # Resumo
-        total_grupos = GrupoCanais.objects.count()
-        total_canais = CanalVenda.objects.count()
-        self.stdout.write(f'\nResumo:')
-        self.stdout.write(f'  - Total de grupos: {total_grupos}')
-        self.stdout.write(f'  - Total de canais: {total_canais}')
+        # Lista de Grupos que usam Custo do Produto (Padrão)
+        grupos_padrao = [
+            'CasaMetais', 'S3G', 'PontoDecor', 'CromoShop', 'Grupo Ghiz', 
+            'HomeFull', 'CasaMoveis', 'Favolli', 'BQHome', 'Birirp'
+        ]
+
+        # Aplicar configurações
+        for g_nome in grupos_ref_steel:
+            GrupoCanais.objects.filter(nome=g_nome).update(
+                tipo_custo='canal', canal_referencia_custo=canal_steel_ref
+            )
+            self.stdout.write(f'  - {g_nome}: Configurado para seguir SteelDecor (CasaMetais)')
+
+        for g_nome in grupos_ref_afiliados:
+            GrupoCanais.objects.filter(nome=g_nome).update(
+                tipo_custo='canal', canal_referencia_custo=canal_afiliado_ref
+            )
+            self.stdout.write(f'  - {g_nome}: Configurado para seguir Afiliados (CasaMetais)')
+
+        for g_nome in grupos_padrao:
+            GrupoCanais.objects.filter(nome=g_nome).update(
+                tipo_custo='padrao', canal_referencia_custo=None
+            )
+            self.stdout.write(f'  - {g_nome}: Configurado para Custo Padrão')
+
+        self.stdout.write(self.style.SUCCESS('\nConfigurações concluídas com sucesso!'))
