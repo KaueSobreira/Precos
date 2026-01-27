@@ -1,6 +1,6 @@
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 
 class TabelaFrete(models.Model):
     TIPO_CHOICES = [
@@ -78,7 +78,7 @@ class TabelaFrete(models.Model):
                 desc = self.descontos_nota.filter(nota=nota_vendedor).first()
                 if desc:
                     fator = (Decimal('100') - desc.percentual_desconto) / Decimal('100')
-                    valor_frete = (valor_frete * fator).quantize(Decimal('0.01'))
+                    valor_frete = (valor_frete * fator).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
             except Exception:
                 pass
         

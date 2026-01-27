@@ -35,7 +35,7 @@ class Produto(models.Model):
         total = Decimal('0.000')
         for item in self.itens_ficha.all():
             total += item.custo_total
-        return total.quantize(Decimal('0.01'))
+        return total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def _calcular_preco_iterativo(self, canal, markup_target, frete_fixo=None, max_iteracoes=10, custo_base=None):
         # Resolve: Preço = (Custo + Taxa(Preço)) * Markup + Frete(Peso, Preço) * Markup_Frete
@@ -53,7 +53,7 @@ class Produto(models.Model):
 
         for _ in range(max_iteracoes):
             novo_preco = ((custo + taxa) * markup_target) + (frete * canal.markup_frete)
-            novo_preco = novo_preco.quantize(Decimal('0.01'))
+            novo_preco = novo_preco.quantize(Decimal('0.000001'), rounding=ROUND_HALF_UP)
 
             nova_taxa = canal.obter_taxa_extra(preco_venda=novo_preco)
             novo_frete = frete_fixo if frete_fixo is not None else canal.obter_frete(
@@ -219,7 +219,7 @@ class ItemFichaTecnica(models.Model):
 
     @property
     def custo_total(self):
-        return (self.quantidade * self.custo_unitario * self.multiplicador).quantize(Decimal('0.001'))
+        return (self.quantidade * self.custo_unitario * self.multiplicador).quantize(Decimal('0.001'), rounding=ROUND_HALF_UP)
 
 class PrecoProdutoCanal(models.Model):
     produto = models.ForeignKey(Produto, related_name='precos_canais', on_delete=models.CASCADE)
@@ -312,8 +312,12 @@ class PrecoProdutoCanal(models.Model):
                         ativo=True
                     ).first()
                     
-                    if preco_ref and preco_ref.preco_venda > 0:
-                        return preco_ref.preco_venda
+                    if preco_ref:
+                        # Recalcula on-the-fly para obter precisão total (6 casas)
+                        # em vez de usar o valor arredondado do banco (2 casas)
+                        pv, _, _, _, _, _ = preco_ref._calcular_todos_precos()
+                        if pv > 0:
+                            return pv
             except Exception:
                 pass 
         return self.produto.custo
@@ -337,7 +341,7 @@ class PrecoProdutoCanal(models.Model):
         """Calcula o desconto máximo possível."""
         if self.preco_venda <= 0:
             return Decimal('0.00')
-        return ((self.preco_venda - self.preco_minimo) / self.preco_venda * Decimal('100')).quantize(Decimal('0.01'))
+        return ((self.preco_venda - self.preco_minimo) / self.preco_venda * Decimal('100')).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     @staticmethod
     def _arredondar_preco(valor):
