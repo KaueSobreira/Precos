@@ -252,7 +252,13 @@ def preco_edit(request, pk):
             preco.preco_minimo_manual = request.POST.get('preco_minimo_manual') or None
 
         frete_especifico = request.POST.get('frete_especifico')
-        preco.frete_especifico = frete_especifico if frete_especifico else None
+        if frete_especifico and frete_especifico.strip():
+            try:
+                preco.frete_especifico = Decimal(frete_especifico.replace(',', '.'))
+            except Exception:
+                messages.warning(request, f'Valor inválido para Frete Específico: {frete_especifico}')
+        else:
+            preco.frete_especifico = None
 
         # Overrides de Parâmetros
         for field in ['imposto', 'operacao', 'lucro', 'promocao', 'minimo', 'ads', 'comissao']:
